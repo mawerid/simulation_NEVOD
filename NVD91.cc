@@ -32,7 +32,6 @@ float NormDistr(float a, float sigma);
 G4long N_event;
 G4int otklik;
 G4long NumPhotEl[600];
-// G4float TimePhotEl[600];
 G4int PerevKM[600][4], PerevMK[7][4][4][6];
 G4int Nfeu;
 G4float NVD_edep, NVD_edep1, NVD_totnpe, NVD_npe;
@@ -44,7 +43,7 @@ G4float Teta, Fi;            // bundle
 G4int MuBundle;              // bundle
 G4float MuNVD[501][8][2];    // bundle
 G4float MuDCR[501][8][8][2]; // new 30.03.2020
-G4double emu_bundle[501];    // bundle
+// G4double emu_bundle[501];    // bundle
 G4float MuTrackLenNVD, nMuNVD, nMuSM[8], nMuSMwat[8], nHitSM, nHitSMwat,
     nMuDCR1, nMuDCRwat1, nMuDCR, nMuDCRwat;    // bundle
 G4float hitSMPLY[8][8], hitSM[8], hitSMwat[8]; // bundle new (trig) 04.08.20
@@ -125,8 +124,6 @@ int main(int argc, char **argv) {
   float TETA1, FI1;
   float Nee;
   float missNVD;
-  // int nabor, naborname1e, naborname2t, n1file, nfiles, nshower, ncellx,
-  // ncelly, sector, naxis;
   int nabor, naborname1e, naborname2t, n1file, nfiles, n1shower, nshowers,
       ncellx, ncelly, sector, naxis;
   int choiceXYaxis, choiceSecPart;
@@ -140,9 +137,6 @@ int main(int argc, char **argv) {
   float NEVENT, PART0, E0, H1INT, TETA, FI;
   float NGAM, NEL, NHADR, NMU, NALLPART;
   float NeNKGlong, sNKGlong;
-  float PARTDESCR;
-  int NLx, ILx, IDPART, IAx, IZx, INx, gen;
-  float PX, PY, PZ, X, Y, T, mass, Ekin;
   float cnteas, cntev, P, R, X1, Y1, R1, Eth;
   float XAxisShift, YAxisShift;
   int TEMP, *temp;
@@ -156,57 +150,6 @@ int main(int argc, char **argv) {
   buf1 = &BUF1[0];
 
   temp1 = &TEMP1;
-
-  //======= CORSIKA
-  double PAMA[6001];
-  double MASSES[76] = {
-      0.E0,         0.E0,          0.51099892E-3, 0.51099892E-3,
-      0.E0,         0.105658369E0, 0.105658369E0, 0.1349766E0,
-      0.13957018E0, 0.13957018E0,  0.497648E0, // 10
-      0.493677E0,   0.493677E0,    0.93956536E0,  0.93827203E0,
-      0.93827203E0, 0.497648E0,    0.54775E0,     1.115683E0,
-      1.18937E0,    1.192642E0, // 20
-      1.197449E0,   1.31483E0,     1.32131E0,     1.67245E0,
-      0.93956536E0, 1.115683E0,    1.18937E0,     1.192642E0,
-      1.197449E0,   1.31483E0, // 30
-      1.32131E0,    1.67245E0,     0.E0,          0.E0,
-      0.E0,         0.E0,          0.E0,          0.E0,
-      0.E0,         0.E0, // 40
-      0.E0,         0.E0,          0.E0,          0.E0,
-      0.E0,         0.E0,          0.E0,          0.E0,
-      0.E0,         0.78259E0, // 50
-      0.7690E0,     0.7665E0,      0.7665E0,      1.2305E0,
-      1.2318E0,     1.2331E0,      1.2344E0,      1.2309E0,
-      1.2323E0,     1.2336E0, // 60
-      1.2349E0,     0.89610E0,     0.89166E0,     0.89166E0,
-      0.89610E0,    0.E0,          0.E0,          0.E0,
-      0.E0,         0.E0, // 70
-      0.54775E0,    0.54775E0,     0.54775E0,     0.54775E0,
-      0.E0};
-  double MASSES2[101] = {
-      0.E0,
-      //   15*0.E0,
-      0.E0, 0.E0, 0.E0, 0.E0, 0.E0, 0.E0, 0.E0, 0.E0, 0.E0, 0.E0, 0.E0, 0.E0,
-      0.E0, 0.E0, 0.E0, 1.8645E0, 1.8697E0, 1.8697E0, 1.8645E0, 1.9682E0, // 120
-      1.9682E0, 2.9804E0, 2.0067E0, 2.0100E0, 2.0100E0, 2.0067E0, 2.1121E0,
-      2.1121E0, 0.0E0, 3.096916E0, // 130
-      1.77699E0, 1.77699E0, 0.E0, 0.E0, 0.E0, 0.E0, 2.28646E0, 2.4679E0,
-      2.4710E0, 2.45402E0, // 140
-      2.4529E0, 2.45376E0, 2.5757E0, 2.5780E0, 2.6975E0, 0.E0, 0.E0, 0.E0,
-      2.28646E0, 2.4679E0, // 150
-      2.4710E0, 2.45402E0, 2.4529E0, 2.45376E0, 2.5757E0, 2.5780E0, 2.6975E0,
-      0.E0, 0.E0, 0.E0, // 160
-      2.5184E0, 2.5175E0, 2.5180E0, 0.E0, 0.E0,
-      //   5*0.E0     , //170
-      0.E0, 0.E0, 0.E0, 0.E0, 0.E0, 2.5184E0, 2.5175E0, 2.5180E0, 0.E0, 0.E0,
-      //   5*0.E0     , //180
-      0.E0, 0.E0, 0.E0, 0.E0, 0.E0,
-      //   20*0.E0
-      0.E0, 0.E0, 0.E0, 0.E0, 0.E0, 0.E0, 0.E0, 0.E0, 0.E0, 0.E0, 0.E0, 0.E0,
-      0.E0, 0.E0, 0.E0, 0.E0, 0.E0, 0.E0, 0.E0, 0.E0};
-
-  int IA, IC, IN1, IP;
-  //======= CORSIKA
 
   //======= EAS
 
@@ -543,24 +486,18 @@ int main(int argc, char **argv) {
   delete visManager;
 #endif
 
-// Job termination
-// Free the store: user actions, physics_list and detector_description are
-//                 owned and deleted by the run manager, so they should not
-//                 be deleted in the main() program !
+  // Job termination
+  // Free the store: user actions, physics_list and detector_description are
+  //                 owned and deleted by the run manager, so they should not
+  //                 be deleted in the main() program !
 
-// simulation
-//   for(int nevt=0; nevt<1; nevt++)
-//   for(int nevt=0; nevt<500; nevt++) // 1 mu
-//   for(int nevt=0; nevt<300; nevt++) // bundles
-//   for(int nevt=0; nevt<25; nevt++) // cascade 25,3,13,20
-//   for(int nevt=0; nevt<25-atoi(argv[2]); nevt++) // cascade
-//   {
-
-// 4 vis for EAS
-#ifdef G4VIS_USE
-  delete visManager;
-#endif
-  // 4 vis for EAS
+  // simulation
+  //   for(int nevt=0; nevt<1; nevt++)
+  //   for(int nevt=0; nevt<500; nevt++) // 1 mu
+  //   for(int nevt=0; nevt<300; nevt++) // bundles
+  //   for(int nevt=0; nevt<25; nevt++) // cascade 25,3,13,20
+  //   for(int nevt=0; nevt<25-atoi(argv[2]); nevt++) // cascade
+  //   {
 
   //======= OneTrack (DECOR SM00_SM01 <-> SM06_SM07)
 
@@ -579,8 +516,6 @@ int main(int argc, char **argv) {
   Fi = 0;
   XAxisShift = 0;
   YAxisShift = 0;
-  int icellx = 0;
-  int icelly = 0;
   sector = 0;
   H1INT = 0;
   NGAM = 0;
@@ -634,9 +569,7 @@ int main(int argc, char **argv) {
            S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH); // EAS
 
   // simulation
-  for (int nevt = 0; nevt < 500; nevt++) // 1 mu
-  //   for(int nevt=0; nevt<1000; nevt++) // emuspe
-  {
+  for (int nevt = 0; nevt < 500; nevt++) {
 
     // horizontal mu
     ExpMuTrack >> NRUN;
@@ -941,44 +874,6 @@ int main(int argc, char **argv) {
         for (int k = 0; k < 2; k++)
           EdepCntSCT1[i][j][k] = 0.;
 
-    for (int i = 0; i < 9; i++) // 7
-      for (int j = 0; j < 4; j++)
-        for (int k = 0; k < 4; k++) {
-          EdepDetNE1[i][j][k] = 0.;
-          for (int m = 0; m < 4; m++)
-            TimDetNE1[i][j][k][m] = 0.;
-        }
-    for (int i = 0; i < 9; i++)
-      for (int j = 0; j < 4; j++) {
-        EdepStNE1[i][j] = 0.;
-        for (int m = 0; m < 4; m++)
-          TimStNE1[i][j][m] = 0.;
-      }
-
-    G4int kdet = 0;
-    for (int i = 0; i < 9; i++)     // cluster   7
-      for (int j = 0; j < 4; j++)   // station
-        for (int k = 0; k < 4; k++) // detector
-        {
-          EdepDetNE1[i][j][k] = EdepDetNE[kdet];
-          for (int m = 0; m < 3; m++) //
-            TimDetNE1[i][j][k][m] = TimDetNE[kdet][m];
-          if (TimDetNE[kdet][4] > 0.)
-            TimDetNE1[i][j][k][3] = TimDetNE[kdet][3] / TimDetNE[kdet][4];
-          kdet = kdet + 1;
-        }
-    G4int kst = 0;
-    for (int i = 0; i < 9; i++)   // cluster
-      for (int j = 0; j < 4; j++) // station
-      {
-        EdepStNE1[i][j] = EdepStNE[kst];
-        for (int m = 0; m < 3; m++)
-          TimStNE1[i][j][m] = TimStNE[kst][m];
-        if (TimStNE[kst][4] > 0.)
-          TimStNE1[i][j][3] = TimStNE[kst][3] / TimStNE[kst][4];
-        kst = kst + 1;
-      }
-
     G4float TEMP1, *temp1;
     temp1 = &TEMP1;
 
@@ -1074,14 +969,9 @@ int main(int argc, char **argv) {
     write(otklik, nTrackSM0, 8 * 4);  // 02.04.09
 
     write(otklik, EdepCntSCT1, 9 * 5 * 2 * 4);
-    write(otklik, EdepDetNE1, 9 * 4 * 4 * 4); // 7*4*4*4
-    write(otklik, TimDetNE1, 9 * 4 * 4 * 4 * 4);
-    write(otklik, EdepStNE1, 9 * 4 * 4);
-    write(otklik, TimStNE1, 9 * 4 * 4 * 4);
 
     TEMP1 = -1.;
     write(otklik, temp1, 4);
-    // ###
 
     N_event++;
 
@@ -1094,12 +984,10 @@ int main(int argc, char **argv) {
            << muSM << '\t' << muSMw << '\t' << nSM << '\t' << nSMw << '\t'
            << *fTimer << G4endl;
   }
-// simulation
+  // simulation
 
-//???   ExpMuTrack.close();
-//???   close(otklik);
-
-//======= OneTrack (DECOR SM00_SM01 <-> SM06_SM07)
+  ExpMuTrack.close();
+  close(otklik);
 
 // 4 vis
 #ifdef G4VIS_USE

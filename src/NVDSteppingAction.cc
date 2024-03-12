@@ -17,33 +17,13 @@
 
 #include "G4SystemOfUnits.hh"
 
-//===== PRISMA-URAN
-
-extern G4float tim_distrPr[32][20003];
-extern G4float tim_distrU[72][20003];
-extern G4float EdepPr[32], EdepU[72];
-extern G4float nnPr[32], nnU[72];
-extern G4float enPr[32], enU[72];
-
-extern G4int fHeT, fHeLi;
-extern G4long Nid;
-
-//===== PRISMA-URAN
-
-extern G4float EdepCntSCT[80];
-extern G4float EdepDetNE[144];
-extern G4float TimDetNE[144][5];
-extern G4float EdepStNE[36];
-extern G4float TimStNE[36][5];
 extern G4long NumPhotEl[600];
 extern G4double Kv_Eff[70];
 
-extern G4float timC;
-extern G4float NVD_edep, NVD_npe, NVD_totnpe, NVD_edep1;
+extern G4float NVD_edep, NVD_npe;
 
-extern G4int MuBundle;
 extern G4float MuNVD[501][8][2];
-extern G4float MuDCR[501][8][8][2]; // new 30.03.2020
+extern G4float MuDCR[501][8][8][2];
 
 // Hamamatsu (interpolation, step = 0.05)
 G4double EnPhot[70] = {
@@ -60,20 +40,17 @@ G4double EnPhot[70] = {
 
 G4double sh = (EnPhot[69] - EnPhot[0]) / 69.;
 
-NVDSteppingAction::NVDSteppingAction() {}
+NVDSteppingAction::NVDSteppingAction() = default;
 
 void NVDSteppingAction::UserSteppingAction(const G4Step *aStep) {
   const G4Track *track = aStep->GetTrack();
   G4String Vname = track->GetVolume()->GetName();
   G4ParticleDefinition *particleType = track->GetDefinition();
-  G4double rand, alfa, KE;
-  G4int nc, mmm, jj;
-  G4int ncnt, ndet, nst;
+  G4double rand;
+  G4int nc, mmm;
 
   G4float eph;
   G4float edep;
-  G4float tim;
-  G4float timG;
 
   G4String particleName = aStep->GetTrack()
                               ->GetDynamicParticle()
@@ -83,14 +60,6 @@ void NVDSteppingAction::UserSteppingAction(const G4Step *aStep) {
   G4String processName =
       aStep->GetPostStepPoint()->GetProcessDefinedStep()->GetProcessName();
 
-  //===== PRISMA-URAN
-
-  G4int itim, jtime, itim_jtime;
-  G4int nbDet;
-  G4double pTime;
-
-  //===== PRISMA-URAN
-
   // bundles
   G4int MuTrackID = track->GetTrackID();
   G4int nbCtrlNVD, nbPlaneDCR;
@@ -99,9 +68,7 @@ void NVDSteppingAction::UserSteppingAction(const G4Step *aStep) {
       particleType == G4MuonMinus::MuonMinusDefinition()) {
     if (MuTrackID == 1 && parentID == 0) // EAS
     {
-
       if (Vname == "CtrlNVD") {
-
         nbCtrlNVD = track->GetVolume()->GetCopyNo();
         if (nbCtrlNVD >= 0 && nbCtrlNVD < 7) {
           if (MuNVD[MuTrackID][0][0] < 0) {
@@ -291,10 +258,8 @@ void NVDSteppingAction::UserSteppingAction(const G4Step *aStep) {
       rand = G4UniformRand();
 
       mmm = int((eph - EnPhot[0]) / sh + 0.5);
-      if (mmm >= 0 && mmm < 70)
-      {
-        if (Kv_Eff[mmm] > rand)
-        {
+      if (mmm >= 0 && mmm < 70) {
+        if (Kv_Eff[mmm] > rand) {
           nc = track->GetVolume()->GetCopyNo();
           if (nc >= 0 && nc < 600) {
             NumPhotEl[nc]++;

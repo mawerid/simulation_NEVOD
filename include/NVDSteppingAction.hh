@@ -1,5 +1,5 @@
-#ifndef NVDSteppingAction_h
-#define NVDSteppingAction_h 1
+#ifndef NVDSTEPPINGACTION_HH
+#define NVDSTEPPINGACTION_HH
 
 #include "G4UserSteppingAction.hh"
 #include "globals.hh"
@@ -7,12 +7,9 @@
 class NVDSteppingAction : public G4UserSteppingAction {
 public:
   NVDSteppingAction();
-  virtual ~NVDSteppingAction(){};
+  ~NVDSteppingAction() override = default;
 
-  virtual void UserSteppingAction(const G4Step *);
-
-private:
-public:
+  void UserSteppingAction(const G4Step *) override;
 };
 
-#endif
+#endif // NVDSTEPPINGACTION_HH
