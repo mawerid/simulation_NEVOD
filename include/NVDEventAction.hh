@@ -1,5 +1,5 @@
-#ifndef NVDEventAction_h
-#define NVDEventAction_h 1
+#ifndef NVDEVENTACTION_HH
+#define NVDEVENTACTION_HH
 
 #include "G4UserEventAction.hh"
 
@@ -8,11 +8,11 @@ class G4Event;
 class NVDEventAction : public G4UserEventAction {
 public:
   NVDEventAction();
-  ~NVDEventAction();
+  ~NVDEventAction() override;
 
 public:
-  void BeginOfEventAction(const G4Event *);
-  void EndOfEventAction(const G4Event *);
+  void BeginOfEventAction(const G4Event *) override;
+  void EndOfEventAction(const G4Event *) override;
 };
 
-#endif
+#endif // NVDEVENTACTION_HH

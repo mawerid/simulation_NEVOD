@@ -3,18 +3,16 @@
 #include "G4ParticleDefinition.hh"
 #include "G4ParticleGun.hh"
 #include "G4ParticleTable.hh"
-#include "Randomize.hh"
 
-#include "G4SystemOfUnits.hh" //xxx
+#include "G4SystemOfUnits.hh"
 
-extern G4float SM1x, SM1y, SM1z, SM2x, SM2y, SM2z, dt06, dA13; // DECOR, SCT
+extern G4float PMDx, PMDy, PMDz, PE, PPx, PPy, PPz, PD;
 
 NVDPrimaryGeneratorAction::NVDPrimaryGeneratorAction() {
   G4int n_particle = 1;
   particleGun = new G4ParticleGun(n_particle);
 
   // default kinematic
-
   G4ParticleTable *particleTable = G4ParticleTable::GetParticleTable();
   G4ParticleDefinition *particle = particleTable->FindParticle("mu-");
   particleGun->SetParticleDefinition(particle);
@@ -27,17 +25,7 @@ NVDPrimaryGeneratorAction::NVDPrimaryGeneratorAction() {
 
 NVDPrimaryGeneratorAction::~NVDPrimaryGeneratorAction() { delete particleGun; }
 
-// EAS 1p
 void NVDPrimaryGeneratorAction::GeneratePrimaries(G4Event *anEvent) {
-  extern G4float PMDx, PMDy, PMDz, PE, PPx, PPy, PPz, PD;
-
-  G4float smeSMx, smeSMy, smeSMz; // ???
-
-  smeSMx = 4.5;
-  smeSMy = 13.;
-  //   smeSMz = 4.5;
-  smeSMz = 4.5 - 0.3; // pravilno
-
   G4ParticleTable *particleTable = G4ParticleTable::GetParticleTable();
   G4ParticleDefinition *particle =
       particleTable->FindParticle("pi+"); // cascade

@@ -1,5 +1,5 @@
-#ifndef NVDPrimaryGeneratorAction_h
-#define NVDPrimaryGeneratorAction_h 1
+#ifndef NVDPRIMARYGENERATORACTION_HH
+#define NVDPRIMARYGENERATORACTION_HH
 
 #include "G4VUserPrimaryGeneratorAction.hh"
 #include "globals.hh"
@@ -10,13 +10,13 @@ class G4Event;
 class NVDPrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction {
 public:
   NVDPrimaryGeneratorAction();
-  ~NVDPrimaryGeneratorAction();
+  ~NVDPrimaryGeneratorAction() override;
 
 public:
-  void GeneratePrimaries(G4Event *);
+  void GeneratePrimaries(G4Event *) override;
 
 private:
   G4ParticleGun *particleGun;
 };
 
-#endif /*NVDPrimaryGeneratorAction_h*/
+#endif // NVDPRIMARYGENERATORACTION_HH

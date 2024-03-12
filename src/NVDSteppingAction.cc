@@ -3,27 +3,19 @@
 #include "G4Colour.hh"
 #include "G4Polyline.hh"
 #include "G4SteppingManager.hh"
-#include "G4VVisManager.hh"
 #include "G4VisAttributes.hh"
 
 #include "G4ParticleDefinition.hh"
 #include "G4Track.hh"
 #include "G4VProcess.hh"
 
-#include "G4ParticleDefinition.hh"
 #include "G4ParticleTable.hh"
 #include "G4ParticleTypes.hh"
 #include "G4Step.hh"
-#include "G4StepPoint.hh"
-#include "G4TouchableHistory.hh"
-#include "G4TrackStatus.hh"
-#include "G4UnitsTable.hh"
-#include "G4VPhysicalVolume.hh"
-#include "G4VTouchable.hh"
 #include "Randomize.hh"
 #include "globals.hh"
 
-#include "G4SystemOfUnits.hh" //xxx
+#include "G4SystemOfUnits.hh"
 
 //===== PRISMA-URAN
 
@@ -45,6 +37,13 @@ extern G4float EdepStNE[36];
 extern G4float TimStNE[36][5];
 extern G4long NumPhotEl[600];
 extern G4double Kv_Eff[70];
+
+extern G4float timC;
+extern G4float NVD_edep, NVD_npe, NVD_totnpe, NVD_edep1;
+
+extern G4int MuBundle;
+extern G4float MuNVD[501][8][2];
+extern G4float MuDCR[501][8][8][2]; // new 30.03.2020
 
 // Hamamatsu (interpolation, step = 0.05)
 G4double EnPhot[70] = {
@@ -75,8 +74,6 @@ void NVDSteppingAction::UserSteppingAction(const G4Step *aStep) {
   G4float edep;
   G4float tim;
   G4float timG;
-  extern G4float timC;
-  extern G4float NVD_edep, NVD_npe, NVD_totnpe, NVD_edep1;
 
   G4String particleName = aStep->GetTrack()
                               ->GetDynamicParticle()
@@ -95,9 +92,6 @@ void NVDSteppingAction::UserSteppingAction(const G4Step *aStep) {
   //===== PRISMA-URAN
 
   // bundles
-  extern G4int MuBundle;
-  extern G4float MuNVD[501][8][2];
-  extern G4float MuDCR[501][8][8][2]; // new 30.03.2020
   G4int MuTrackID = track->GetTrackID();
   G4int nbCtrlNVD, nbPlaneDCR;
 
@@ -297,11 +291,11 @@ void NVDSteppingAction::UserSteppingAction(const G4Step *aStep) {
       rand = G4UniformRand();
 
       mmm = int((eph - EnPhot[0]) / sh + 0.5);
-      if (mmm >= 0 && mmm < 70) // ###
+      if (mmm >= 0 && mmm < 70)
       {
-        if (Kv_Eff[mmm] > rand) // ###
+        if (Kv_Eff[mmm] > rand)
         {
-          nc = track->GetVolume()->GetCopyNo(); //???
+          nc = track->GetVolume()->GetCopyNo();
           if (nc >= 0 && nc < 600) {
             NumPhotEl[nc]++;
             NVD_npe = NVD_npe + 1.;
