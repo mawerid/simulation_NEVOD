@@ -1,5 +1,5 @@
-#ifndef NVDRUNACTION_HH
-#define NVDRUNACTION_HH
+#ifndef RUNACTION_HH
+#define RUNACTION_HH
 
 #include "G4UserRunAction.hh"
 #include "globals.hh"
@@ -7,14 +7,17 @@
 class G4Timer;
 class G4Run;
 
-class NVDRunAction : public G4UserRunAction {
+namespace NEVOD {
+class RunAction : public G4UserRunAction {
 public:
-  NVDRunAction();
-  ~NVDRunAction() override;
+  RunAction();
+  ~RunAction() override;
 
 public:
   void BeginOfRunAction(const G4Run *aRun) override;
   void EndOfRunAction(const G4Run *aRun) override;
 };
 
-#endif // NVDRUNACTION_HH
+} // namespace NEVOD
+
+#endif // RUNACTION_HH

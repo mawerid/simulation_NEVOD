@@ -1,4 +1,4 @@
-#include "NVDSteppingAction.hh"
+#include "SteppingAction.hh"
 
 #include "G4Colour.hh"
 #include "G4Polyline.hh"
@@ -17,6 +17,8 @@
 
 #include "G4SystemOfUnits.hh"
 
+namespace NEVOD {
+
 extern G4long NumPhotEl[600];
 extern G4double Kv_Eff[70];
 
@@ -24,6 +26,8 @@ extern G4float NVD_edep, NVD_npe;
 
 extern G4float MuNVD[501][8][2];
 extern G4float MuDCR[501][8][8][2];
+
+extern G4float EdepCntSCT[80];
 
 // Hamamatsu (interpolation, step = 0.05)
 G4double EnPhot[70] = {
@@ -40,9 +44,9 @@ G4double EnPhot[70] = {
 
 G4double sh = (EnPhot[69] - EnPhot[0]) / 69.;
 
-NVDSteppingAction::NVDSteppingAction() = default;
+SteppingAction::SteppingAction() = default;
 
-void NVDSteppingAction::UserSteppingAction(const G4Step *aStep) {
+void SteppingAction::UserSteppingAction(const G4Step *aStep) {
   const G4Track *track = aStep->GetTrack();
   G4String Vname = track->GetVolume()->GetName();
   G4ParticleDefinition *particleType = track->GetDefinition();
@@ -52,13 +56,13 @@ void NVDSteppingAction::UserSteppingAction(const G4Step *aStep) {
   G4float eph;
   G4float edep;
 
-  G4String particleName = aStep->GetTrack()
-                              ->GetDynamicParticle()
-                              ->GetParticleDefinition()
-                              ->GetParticleName();
+  //  G4String particleName = aStep->GetTrack()
+  //                              ->GetDynamicParticle()
+  //                              ->GetParticleDefinition()
+  //                              ->GetParticleName();
   G4int parentID = track->GetParentID();
-  G4String processName =
-      aStep->GetPostStepPoint()->GetProcessDefinedStep()->GetProcessName();
+  //  G4String processName =
+  //      aStep->GetPostStepPoint()->GetProcessDefinedStep()->GetProcessName();
 
   // bundles
   G4int MuTrackID = track->GetTrackID();
@@ -94,10 +98,11 @@ void NVDSteppingAction::UserSteppingAction(const G4Step *aStep) {
             MuNVD[MuTrackID][7][1] =
                 aStep->GetPreStepPoint()->GetKineticEnergy();
           }
-        } else {
-          G4cout << "!!! nbCtrlNVD is out of range ???" << '\t' << nbCtrlNVD
-                 << G4endl;
-        }
+        } // else {
+        //          G4cout << "!!! nbCtrlNVD is out of range ???" << '\t' <<
+        //          nbCtrlNVD
+        //                 << G4endl;
+        //        }
       } // CtrlNVD
 
       // new 30.03.2020
@@ -105,142 +110,160 @@ void NVDSteppingAction::UserSteppingAction(const G4Step *aStep) {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
           MuDCR[MuTrackID][0][nbPlaneDCR][0] = 1;
-        else
-          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' << nbPlaneDCR
-                 << G4endl;
+        //        else
+        //          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' <<
+        //          nbPlaneDCR
+        //                 << G4endl;
       }
       if (Vname == "SM1x") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
           MuDCR[MuTrackID][1][nbPlaneDCR][0] = 1;
-        else
-          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' << nbPlaneDCR
-                 << G4endl;
+        //        else
+        //          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' <<
+        //          nbPlaneDCR
+        //                 << G4endl;
       }
       if (Vname == "SM2x") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
           MuDCR[MuTrackID][2][nbPlaneDCR][0] = 1;
-        else
-          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' << nbPlaneDCR
-                 << G4endl;
+        //        else
+        //          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' <<
+        //          nbPlaneDCR
+        //                 << G4endl;
       }
       if (Vname == "SM3x") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
           MuDCR[MuTrackID][3][nbPlaneDCR][0] = 1;
-        else
-          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' << nbPlaneDCR
-                 << G4endl;
+        //        else
+        //          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' <<
+        //          nbPlaneDCR
+        //                 << G4endl;
       }
       if (Vname == "SM4x") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
           MuDCR[MuTrackID][4][nbPlaneDCR][0] = 1;
-        else
-          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' << nbPlaneDCR
-                 << G4endl;
+        //        else
+        //          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' <<
+        //          nbPlaneDCR
+        //                 << G4endl;
       }
       if (Vname == "SM5x") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
           MuDCR[MuTrackID][5][nbPlaneDCR][0] = 1;
-        else
-          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' << nbPlaneDCR
-                 << G4endl;
+        //        else
+        //          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' <<
+        //          nbPlaneDCR
+        //                 << G4endl;
       }
       if (Vname == "SM6x") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
           MuDCR[MuTrackID][6][nbPlaneDCR][0] = 1;
-        else
-          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' << nbPlaneDCR
-                 << G4endl;
+        //        else
+        //          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' <<
+        //          nbPlaneDCR
+        //                 << G4endl;
       }
       if (Vname == "SM7x") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
           MuDCR[MuTrackID][7][nbPlaneDCR][0] = 1;
-        else
-          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' << nbPlaneDCR
-                 << G4endl;
+        //        else
+        //          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' <<
+        //          nbPlaneDCR
+        //                 << G4endl;
       }
 
       if (Vname == "SM0y") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
           MuDCR[MuTrackID][0][nbPlaneDCR][1] = 1;
-        else
-          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' << nbPlaneDCR
-                 << G4endl;
+        //        else
+        //          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' <<
+        //          nbPlaneDCR
+        //                 << G4endl;
       }
       if (Vname == "SM1y") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
           MuDCR[MuTrackID][1][nbPlaneDCR][1] = 1;
-        else
-          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' << nbPlaneDCR
-                 << G4endl;
+        //        else
+        //          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' <<
+        //          nbPlaneDCR
+        //                 << G4endl;
       }
       if (Vname == "SM2y") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
           MuDCR[MuTrackID][2][nbPlaneDCR][1] = 1;
-        else
-          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' << nbPlaneDCR
-                 << G4endl;
+        //        else
+        //          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' <<
+        //          nbPlaneDCR
+        //                 << G4endl;
       }
       if (Vname == "SM3y") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
           MuDCR[MuTrackID][3][nbPlaneDCR][1] = 1;
-        else
-          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' << nbPlaneDCR
-                 << G4endl;
+        //        else
+        //          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' <<
+        //          nbPlaneDCR
+        //                 << G4endl;
       }
       if (Vname == "SM4y") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
           MuDCR[MuTrackID][4][nbPlaneDCR][1] = 1;
-        else
-          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' << nbPlaneDCR
-                 << G4endl;
+        //        else
+        //          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' <<
+        //          nbPlaneDCR
+        //                 << G4endl;
       }
       if (Vname == "SM5y") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
           MuDCR[MuTrackID][5][nbPlaneDCR][1] = 1;
-        else
-          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' << nbPlaneDCR
-                 << G4endl;
+        //        else
+        //          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' <<
+        //          nbPlaneDCR
+        //                 << G4endl;
       }
       if (Vname == "SM6y") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
           MuDCR[MuTrackID][6][nbPlaneDCR][1] = 1;
-        else
-          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' << nbPlaneDCR
-                 << G4endl;
+        //        else
+        //          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' <<
+        //          nbPlaneDCR
+        //                 << G4endl;
       }
       if (Vname == "SM7y") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
           MuDCR[MuTrackID][7][nbPlaneDCR][1] = 1;
-        else
-          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' << nbPlaneDCR
-                 << G4endl;
+        //        else
+        //          G4cout << "!!! nbPlaneDCR is out of range ???" << '\t' <<
+        //          nbPlaneDCR
+        //                 << G4endl;
       }
 
     } // MuTrackID
 
   } // muon
-    // bundles
+  // bundles
 
+  //  if (particleType != G4OpticalPhoton::OpticalPhotonDefinition()) {
   if (Vname == "WaterBox") {
     edep = aStep->GetTotalEnergyDeposit();
 
     NVD_edep = NVD_edep + edep / MeV;
   }
+  //  }
 
   if (particleType == G4OpticalPhoton::OpticalPhotonDefinition()) {
 
@@ -249,8 +272,7 @@ void NVDSteppingAction::UserSteppingAction(const G4Step *aStep) {
       aStep->GetTrack()->SetTrackStatus(fStopAndKill); // alt
     }
 
-    if (Vname == "Photokat") // ### ??? Vname(...)
-    {
+    if (Vname == "Photokat") {
       eph = aStep->GetTrack()->GetKineticEnergy();
 
       aStep->GetTrack()->SetTrackStatus(fStopAndKill); // alt
@@ -265,11 +287,25 @@ void NVDSteppingAction::UserSteppingAction(const G4Step *aStep) {
             NumPhotEl[nc]++;
             NVD_npe = NVD_npe + 1.;
           } // proverka nkopy
-          else
-            G4cout << "!!! nPMT is out of range ???" << '\t' << nc << G4endl;
+            //          else
+            //            G4cout << "!!! nPMT is out of range ???" << '\t' << nc
+            //            << G4endl;
 
         } // rozigr phot-effecta
       }   // proverka diapazona energii
     }     // popal v photokatod
+
+    if (Vname == "physScint") {
+      edep = aStep->GetTotalEnergyDeposit();
+      G4int ncnt;
+      ncnt = track->GetVolume()->GetCopyNo(); //???
+      if (ncnt >= 0 && ncnt < 80)
+        EdepCntSCT[ncnt] = EdepCntSCT[ncnt] + edep / MeV;
+      //      else
+      //        G4cout << "!!! ncnt SCT is out of range ???" << '\t' << ncnt <<
+      //        G4endl;
+    }
   }
 }
+
+} // namespace NEVOD
