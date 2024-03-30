@@ -3,17 +3,18 @@
 #include "G4Event.hh"
 #include "G4EventManager.hh"
 #include "G4Trajectory.hh"
+
 #include <unistd.h>
 
 namespace NEVOD {
 
-float NormDistr(float a, float sigma) {
+double NormDistr(double a, double sigma) {
 
-  G4float g1, g2, norm;
+  G4double g1, g2, norm;
 
   g1 = G4UniformRand();
   g2 = G4UniformRand();
-  norm = sqrt(-2. * log(g1)) * cos(2. * M_PI * g2);
+  norm = std::sqrt(-2. * log(g1)) * cos(2. * M_PI * g2);
   norm = a + norm * sigma;
 
   return norm;
@@ -22,46 +23,46 @@ float NormDistr(float a, float sigma) {
 extern G4long N_event;
 extern G4int otklik;
 
-extern float NRUN;
-extern float NEVENT;
+extern G4long runNum;
+extern G4long eventNum;
 
-extern G4long NumPhotEl[600];
+extern G4long photoelecNum[600];
 extern G4int PerevKM[600][4];
-extern G4int Nfeu;
+extern G4int feuNum;
 extern G4float NVD_edep;
 extern G4float NVD_npe;
 
-extern G4float Teta, Fi;
-extern G4int MuBundle;
+extern G4double theta, phi;
 extern G4float MuNVD[501][8][2];
 extern G4float MuDCR[501][8][8][2];
-extern G4float nMuNVD;
-extern G4float MuTrackLenNVD;
-extern G4float hitSMPLY[8][8];
 
 extern G4float EdepCntSCT[80];
 
-extern G4float nTrackSMX[8], nTrackSMY[8], nTrackSM[8], nTrackSMXw[8],
-    nTrackSMYw[8], nTrackSMw[8];
-extern G4float hSM[8], hSMw[8], nSM, nSMw;
-extern G4float muSM, muSMw, muDCR, muDCRw;
+G4float nMuNVD;
+G4float MuTrackLenNVD;
+G4float hitSMPLY[8][8];
 
-extern G4int MuTrackPLX, MuTrackPLY;
-extern G4int hitSMPLYe, hitSMPLYo;
+G4float nTrackSMX[8], nTrackSMY[8], nTrackSM[8], nTrackSMXw[8], nTrackSMYw[8],
+    nTrackSMw[8];
+G4float hSM[8], hSMw[8], nSM, nSMw;
+G4float muSM, muSMw, muDCR, muDCRw;
 
-extern G4long A, Nfe;
-extern G4float AmplKSM[7][4][4][6];
-extern G4double Q;
-extern G4double amp;
-extern G4int npl, nstr, nmod, nfeu;
+G4int MuTrackPLX, MuTrackPLY;
+G4int hitSMPLYe, hitSMPLYo;
 
-extern G4float eMuNVD, eMuNVD1;
+G4long A, Nfe;
+G4float AmplKSM[7][4][4][6];
+G4double Q;
+G4double amp;
+G4int npl, nstr, nmod, nfeu;
 
-extern G4float EdepCntSCT1[9][5][2];
+G4float eMuNVD, eMuNVD1;
 
-EventAction::EventAction() = default;
+G4float EdepCntSCT1[9][5][2];
 
-EventAction::~EventAction() = default;
+EventAction::EventAction() { timer = new G4Timer; }
+
+EventAction::~EventAction() { delete timer; }
 
 void EventAction::BeginOfEventAction(const G4Event *) {
   for (G4int ism = 0; ism < 8; ism++) {
@@ -74,6 +75,7 @@ void EventAction::BeginOfEventAction(const G4Event *) {
     nTrackSMYw[ism] = 0;
     nTrackSMw[ism] = 0;
   }
+
   nSM = 0;
   nSMw = 0;
   muSM = 0;
@@ -87,7 +89,6 @@ void EventAction::BeginOfEventAction(const G4Event *) {
 
   NVD_edep = 0.;
   NVD_npe = 0.;
-  MuBundle = 0.;
   MuTrackLenNVD = 0;
   nMuNVD = 0;
   eMuNVD = 0.;
@@ -105,7 +106,7 @@ void EventAction::BeginOfEventAction(const G4Event *) {
     for (int k = 0; k < 2; k++)
       MuNVD[i][0][k] = -1.;
 
-  for (long &i : NumPhotEl)
+  for (long &i : photoelecNum)
     i = 0;
 
   for (float &k : EdepCntSCT)
@@ -122,11 +123,13 @@ void EventAction::BeginOfEventAction(const G4Event *) {
         for (nfeu = 0; nfeu < 6; nfeu++) {
           AmplKSM[npl][nstr][nmod][nfeu] = 0;
         }
+
+  timer->Start();
 }
 
 void EventAction::EndOfEventAction(const G4Event *) {
 
-  MuBundle = MuBundle + 1;
+  timer->Stop();
 
   for (G4int ism = 0; ism < 8; ism++) {
     MuTrackPLX = 0;
@@ -135,10 +138,10 @@ void EventAction::EndOfEventAction(const G4Event *) {
         MuTrackPLX = MuTrackPLX + 1;
     if (MuTrackPLX >= 5) {
       nTrackSMX[ism] = nTrackSMX[ism] + 1.;
-      if (Fi >= 15. && Fi <= 75.) // 195-255 (exp)
+      if (phi >= 15. && phi <= 75.) // 195-255 (exp)
         if (ism >= 2)
           nTrackSMXw[ism] = nTrackSMXw[ism] + 1.;
-      if (Fi >= 285. && Fi <= 345.) // 105-165 (exp)
+      if (phi >= 285. && phi <= 345.) // 105-165 (exp)
         if (ism >= 0 && ism <= 5)
           nTrackSMXw[ism] = nTrackSMXw[ism] + 1.;
     }
@@ -149,10 +152,10 @@ void EventAction::EndOfEventAction(const G4Event *) {
         MuTrackPLY = MuTrackPLY + 1;
     if (MuTrackPLY >= 5) {
       nTrackSMY[ism] = nTrackSMY[ism] + 1.;
-      if (Fi >= 15. && Fi <= 75.) // 195-255 (exp)
+      if (phi >= 15. && phi <= 75.) // 195-255 (exp)
         if (ism >= 2)
           nTrackSMYw[ism] = nTrackSMYw[ism] + 1.;
-      if (Fi >= 285. && Fi <= 345.) // 105-165 (exp)
+      if (phi >= 285. && phi <= 345.) // 105-165 (exp)
         if (ism >= 0 && ism <= 5)
           nTrackSMYw[ism] = nTrackSMYw[ism] + 1.;
     }
@@ -163,10 +166,10 @@ void EventAction::EndOfEventAction(const G4Event *) {
 
     if (MuTrackPLX >= 5 && MuTrackPLY >= 5) {
       nTrackSM[ism] = nTrackSM[ism] + 1.;
-      if (Fi >= 15. && Fi <= 75.) // 195-255 (exp)
+      if (phi >= 15. && phi <= 75.) // 195-255 (exp)
         if (ism >= 2)
           nTrackSMw[ism] = nTrackSMw[ism] + 1.;
-      if (Fi >= 285. && Fi <= 345.) // 105-165 (exp)
+      if (phi >= 285. && phi <= 345.) // 105-165 (exp)
         if (ism >= 0 && ism <= 5)
           nTrackSMw[ism] = nTrackSMw[ism] + 1.;
     }
@@ -219,8 +222,7 @@ void EventAction::EndOfEventAction(const G4Event *) {
     }
   }
 
-  for (G4int ism = 0; ism < 8; ism++) //
-  {
+  for (G4int ism = 0; ism < 8; ism++) {
     hitSMPLYe = 0;
     for (G4int ipl = 0; ipl < 7; ipl = ipl + 2) //
     {
@@ -234,17 +236,16 @@ void EventAction::EndOfEventAction(const G4Event *) {
 
     if (hitSMPLYe >= 2 && hitSMPLYo >= 2) {
       hSM[ism] = 1;
-      if (Fi >= 15. && Fi <= 75.) // 195-255 (exp)
+      if (phi >= 15. && phi <= 75.) // 195-255 (exp)
         if (ism >= 2)
           hSMw[ism] = 1;
-      if (Fi >= 285. && Fi <= 345.) // 105-165 (exp)
+      if (phi >= 285. && phi <= 345.) // 105-165 (exp)
         if (ism >= 0 && ism <= 5)
           hSMw[ism] = 1;
     }
   }
 
-  for (G4int ism = 0; ism < 8; ism++) //
-  {
+  for (G4int ism = 0; ism < 8; ism++) {
     if (hSM[ism] > 0)
       nSM = nSM + 1;
     if (hSMw[ism] > 0)
@@ -261,12 +262,12 @@ void EventAction::EndOfEventAction(const G4Event *) {
 
   MuTrackLenNVD = MuTrackLenNVD / 1000.; // m
 
-  for (G4int j = 0; j < Nfeu; j++) {
+  for (G4int j = 0; j < feuNum; j++) {
     npl = PerevKM[j][0];
     nstr = PerevKM[j][1];
     nmod = PerevKM[j][2];
     nfeu = PerevKM[j][3];
-    Nfe = NumPhotEl[j];
+    Nfe = photoelecNum[j];
     if (Nfe > 0) {
       amp = 0;
       for (G4int i = 0; i < Nfe; i++) {      // Amp(Q)
@@ -282,64 +283,68 @@ void EventAction::EndOfEventAction(const G4Event *) {
     } // if(Nfe > 0)
   }   // end cikl po feu
 
-  G4float TEMP1, *temp1;
-  temp1 = &TEMP1;
-
-  //  write
-  TEMP1 = N_event;
-  write(otklik, temp1, 4);
-
-  TEMP1 = NRUN;
-  write(otklik, temp1, 4);
-  TEMP1 = NEVENT;
-  write(otklik, temp1, 4);
-  //           TEMP1 = TETA*180./M_PI;
-  TEMP1 = Teta;
-  write(otklik, temp1, 4);
-  //           TEMP1 = FI*180./M_PI;
-  TEMP1 = Fi;
-  write(otklik, temp1, 4);
-
-  TEMP1 = NVD_edep;
-  write(otklik, temp1, 4);
-  TEMP1 = NVD_npe;
-  write(otklik, temp1, 4);
-  TEMP1 = MuBundle;
-  write(otklik, temp1, 4);
-  TEMP1 = MuTrackLenNVD;
-  write(otklik, temp1, 4);
-  TEMP1 = nMuNVD;
-  write(otklik, temp1, 4);
-  TEMP1 = eMuNVD;
-  write(otklik, temp1, 4);
-  TEMP1 = eMuNVD1;
-  write(otklik, temp1, 4);
-
-  TEMP1 = muDCR;           // 04.09.20
-  write(otklik, temp1, 4); // ###
-  TEMP1 = muSM;            // 04.09.20
-  write(otklik, temp1, 4); // ###
-  TEMP1 = nSM;             // ###
-  write(otklik, temp1, 4); // ###
-  TEMP1 = muDCRw;          // 04.09.20
-  write(otklik, temp1, 4); // ###
-  TEMP1 = muSMw;           // 04.09.20
-  write(otklik, temp1, 4); // ###
-  TEMP1 = nSMw;            // ###
-  write(otklik, temp1, 4); // ###
-
-  write(otklik, AmplKSM, 7 * 4 * 4 * 6 * 4);
-  write(otklik, hSM, 8 * 4);       // ###
-  write(otklik, nTrackSMX, 8 * 4); // 02.04.09
-  write(otklik, nTrackSMY, 8 * 4); // 02.04.09
-  write(otklik, nTrackSM, 8 * 4);  // 02.04.09
-
-  write(otklik, EdepCntSCT1, 9 * 5 * 2 * 4);
-
-  TEMP1 = -1.;
-  write(otklik, temp1, 4);
+  //  G4float TEMP1, *temp1;
+  //  temp1 = &TEMP1;
+  //
+  //  //  write
+  //  TEMP1 = N_event;
+  //  write(otklik, temp1, 4);
+  //
+  //  TEMP1 = runNum;
+  //  write(otklik, temp1, 4);
+  //  TEMP1 = eventNum;
+  //  write(otklik, temp1, 4);
+  //  //           TEMP1 = TETA*180./M_PI;
+  //  TEMP1 = theta;
+  //  write(otklik, temp1, 4);
+  //  //           TEMP1 = FI*180./M_PI;
+  //  TEMP1 = phi;
+  //  write(otklik, temp1, 4);
+  //
+  //  TEMP1 = NVD_edep;
+  //  write(otklik, temp1, 4);
+  //  TEMP1 = NVD_npe;
+  //  write(otklik, temp1, 4);
+  //  TEMP1 = MuTrackLenNVD;
+  //  write(otklik, temp1, 4);
+  //  TEMP1 = nMuNVD;
+  //  write(otklik, temp1, 4);
+  //  TEMP1 = eMuNVD;
+  //  write(otklik, temp1, 4);
+  //  TEMP1 = eMuNVD1;
+  //  write(otklik, temp1, 4);
+  //
+  //  TEMP1 = muDCR;           // 04.09.20
+  //  write(otklik, temp1, 4); // ###
+  //  TEMP1 = muSM;            // 04.09.20
+  //  write(otklik, temp1, 4); // ###
+  //  TEMP1 = nSM;             // ###
+  //  write(otklik, temp1, 4); // ###
+  //  TEMP1 = muDCRw;          // 04.09.20
+  //  write(otklik, temp1, 4); // ###
+  //  TEMP1 = muSMw;           // 04.09.20
+  //  write(otklik, temp1, 4); // ###
+  //  TEMP1 = nSMw;            // ###
+  //  write(otklik, temp1, 4); // ###
+  //
+  //  write(otklik, AmplKSM, 7 * 4 * 4 * 6 * 4);
+  //  write(otklik, hSM, 8 * 4);       // ###
+  //  write(otklik, nTrackSMX, 8 * 4); // 02.04.09
+  //  write(otklik, nTrackSMY, 8 * 4); // 02.04.09
+  //  write(otklik, nTrackSM, 8 * 4);  // 02.04.09
+  //
+  //  write(otklik, EdepCntSCT1, 9 * 5 * 2 * 4);
+  //
+  //  TEMP1 = -1.;
+  //  write(otklik, temp1, 4);
 
   N_event++;
+
+  G4cout << N_event << '\t' << theta << '\t' << phi << '\t' << NVD_edep << '\t'
+         << NVD_npe << '\t' << MuTrackLenNVD << '\t' << nMuNVD << '\t'
+         << eMuNVD / 1000. << '\t' << eMuNVD1 / 1000. << '\t' << muDCR << '\t'
+         << muDCRw << '\t' << muSM << '\t' << muSMw << '\t' << nSM << '\t'
+         << nSMw << '\t' << *timer << G4endl;
 }
 
 } // namespace NEVOD

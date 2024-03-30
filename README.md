@@ -1,8 +1,5 @@
 # To DO
 
-- what if set min max coordinates for volumes to start and end and get it?
-
-
 - boost speed
 - add energy as input
 - visualize running particles
@@ -11,3 +8,10 @@
 - clear main file
 - check boosting simulation from cmake files
 - add multithreading
+
+For MT:
+
+- [DONE] Primary generation must be with own file reading class
+- [ERROR] Rebuild MT version of GEANT4 with oi available
+- Move collecting data from UserEventAction::EndOfEventAction() to RecordEvent
+- [DONE] Move printing from main loop to the UserEventAction::EndOfEventAction()

@@ -2,6 +2,7 @@
 #define ACTION_HH
 
 #include "G4VUserActionInitialization.hh"
+#include "globals.hh"
 
 namespace NEVOD {
 

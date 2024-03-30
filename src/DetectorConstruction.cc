@@ -23,7 +23,7 @@
 namespace NEVOD {
 
 extern G4int PerevKM[600][4];
-extern G4int Nfeu;
+extern G4int feuNum;
 
 // int dXY(int DS, int det, double &x, double &y);
 
@@ -1015,7 +1015,7 @@ G4VPhysicalVolume *DetectorConstruction::Construct() {
       }
     }
   }
-  Nfeu = nkopy;
+  feuNum = nkopy;
 
   // --------------- SKT ---------------
 

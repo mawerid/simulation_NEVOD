@@ -1,6 +1,7 @@
 #ifndef EVENTACTION_HH
 #define EVENTACTION_HH
 
+#include "G4Timer.hh"
 #include "G4UserEventAction.hh"
 
 class G4Event;
@@ -12,9 +13,11 @@ public:
   EventAction();
   ~EventAction() override;
 
-public:
   void BeginOfEventAction(const G4Event *) override;
   void EndOfEventAction(const G4Event *) override;
+
+private:
+  G4Timer *timer = nullptr;
 };
 
 } // namespace NEVOD

@@ -1,6 +1,7 @@
 #ifndef PRIMARYGENERATORACTION_HH
 #define PRIMARYGENERATORACTION_HH
 
+#include "FileReader.hh"
 #include "G4VUserPrimaryGeneratorAction.hh"
 #include "globals.hh"
 
@@ -11,13 +12,14 @@ namespace NEVOD {
 
 class PrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction {
 public:
-  PrimaryGeneratorAction();
+  explicit PrimaryGeneratorAction(G4String &fileName, size_t shift = 0);
   ~PrimaryGeneratorAction() override;
 
 public:
-  void GeneratePrimaries(G4Event *) override;
+  void GeneratePrimaries(G4Event *anEvent) override;
 
 private:
+  static FileReader *fileReader;
   G4ParticleGun *particleGun;
 };
 
