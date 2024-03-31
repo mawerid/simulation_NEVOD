@@ -65,9 +65,9 @@ int main(int argc, char **argv) {
     G4String set = argv[1];
     G4String shift = argv[2];
 
-    input_file = std::string("../ot/OTDCR_") + set + ".txt";
+    input_file = std::string("../input/OTDCR_") + set + ".txt";
     input_shift = stoull(shift);
-    output_file = std::string("../out/otdcr_") + set + "_" + shift + ".csv";
+    output_file = std::string("../output/otdcr_") + set + "_" + shift + ".csv";
   } else {
     throw std::invalid_argument("No set number and shift provided.");
   }
