@@ -5,8 +5,6 @@
 #include "globals.hh"
 
 class G4Box;
-class G4Trd;
-class G4Tubs;
 class G4LogicalVolume;
 class G4VPhysicalVolume;
 
@@ -107,6 +105,7 @@ private:
   G4LogicalVolume *logCtrlNVD[8]{};
   G4VPhysicalVolume *physCtrlNVD[8]{};
 
+  /*
   // NEVOD-EAS
   G4Trd *trdRoofNE[36]{}; // 28
   G4LogicalVolume *logRoofNE[36]{};
@@ -196,6 +195,7 @@ private:
   G4Box *boxModerate[72]{};
   G4LogicalVolume *logModerate[72]{};
   G4VPhysicalVolume *physModerate[72]{};
+  */
 };
 } // namespace NEVOD
 

@@ -3,8 +3,9 @@
 namespace NEVOD {
 
 EventInit::EventInit(G4long runNum_, G4long eventNum_, G4double startX_,
-             G4double startY_, G4double startZ_, G4double endX_, G4double endY_,
-             G4double endZ_, G4double energy_, G4int particle_num_)
+                     G4double startY_, G4double startZ_, G4double endX_,
+                     G4double endY_, G4double endZ_, G4double energy_,
+                     G4int particle_num_)
     : runNum(runNum_), eventNum(eventNum_), startX(startX_), startY(startY_),
       startZ(startZ_), endX(endX_), endY(endY_), endZ(endZ_), energy(energy_),
       particle_num(particle_num_) {}
@@ -25,7 +26,7 @@ FileReader::FileReader(G4String &fileName, size_t shift) {
 
 FileReader::~FileReader() { inputFile.close(); }
 
-EventInit FileReader::GetEvent() {
+EventInit FileReader::getEvent() {
 
   if (eventList.empty()) {
     for (int i = 0; i < EVENT_BUFFER_SIZE; i++) {

@@ -19,14 +19,15 @@
 
 namespace NEVOD {
 
-extern G4long photoelecNum[600];
+extern G4long photoelNum[600];
 
-extern G4float NVD_edep, NVD_npe;
+extern G4double energyDepNEVOD;
+extern G4long particleCountNEVOD;
 
-extern G4float MuNVD[501][8][2];
-extern G4float MuDCR[501][8][8][2];
+extern G4double muonNEVOD[501][8][2];
+extern G4double muonDECOR[501][8][8][2];
 
-extern G4float EdepCntSCT[80];
+extern G4double edepCountSCT[80];
 
 // Quantum efficiency of PMT
 // Hamamatsu (interpolation)
@@ -42,8 +43,7 @@ G4double Kv_Eff[70] = {
     0.055566,    0.0515698,  0.0474906,  0.0434113,  0.0394943,  0.0358075,
     0.0324377,   0.0298943,  0.0273547,  0.0248642,  0.0224226,  0.0199849,
     0.0177698,   0.0159019,  0.0144,     0.0131736,  0.0118792,  0.010566,
-    0.00943396,  0.00846415, 0.00753585, 0.00661132,
-};
+    0.00943396,  0.00846415, 0.00753585, 0.00661132};
 
 // Hamamatsu (interpolation, step = 0.05)
 G4double EnPhot[70] = {
@@ -69,8 +69,8 @@ void SteppingAction::UserSteppingAction(const G4Step *aStep) {
   G4double rand;
   G4int nc, mmm;
 
-  G4float eph;
-  G4float edep;
+  G4double eph;
+  G4double edep;
 
   G4int parentID = track->GetParentID();
   // bundles
@@ -84,27 +84,27 @@ void SteppingAction::UserSteppingAction(const G4Step *aStep) {
       if (Vname == "CtrlNVD") {
         nbCtrlNVD = track->GetVolume()->GetCopyNo();
         if (nbCtrlNVD >= 0 && nbCtrlNVD < 7) {
-          if (MuNVD[MuTrackID][0][0] < 0) {
-            MuNVD[MuTrackID][0][0] = nbCtrlNVD;
-            MuNVD[MuTrackID][1][0] = track->GetPosition().x();
-            MuNVD[MuTrackID][2][0] = track->GetPosition().y();
-            MuNVD[MuTrackID][3][0] = track->GetPosition().z();
-            MuNVD[MuTrackID][4][0] = track->GetMomentumDirection().x();
-            MuNVD[MuTrackID][5][0] = track->GetMomentumDirection().y();
-            MuNVD[MuTrackID][6][0] = track->GetMomentumDirection().z();
-            MuNVD[MuTrackID][7][0] =
+          if (muonNEVOD[MuTrackID][0][0] < 0) {
+            muonNEVOD[MuTrackID][0][0] = nbCtrlNVD;
+            muonNEVOD[MuTrackID][1][0] = track->GetPosition().x();
+            muonNEVOD[MuTrackID][2][0] = track->GetPosition().y();
+            muonNEVOD[MuTrackID][3][0] = track->GetPosition().z();
+            muonNEVOD[MuTrackID][4][0] = track->GetMomentumDirection().x();
+            muonNEVOD[MuTrackID][5][0] = track->GetMomentumDirection().y();
+            muonNEVOD[MuTrackID][6][0] = track->GetMomentumDirection().z();
+            muonNEVOD[MuTrackID][7][0] =
                 aStep->GetPreStepPoint()->GetKineticEnergy();
           }
-          if (MuNVD[MuTrackID][0][0] >= 0 &&
-              nbCtrlNVD != MuNVD[MuTrackID][0][0]) {
-            MuNVD[MuTrackID][0][1] = nbCtrlNVD;
-            MuNVD[MuTrackID][1][1] = track->GetPosition().x();
-            MuNVD[MuTrackID][2][1] = track->GetPosition().y();
-            MuNVD[MuTrackID][3][1] = track->GetPosition().z();
-            MuNVD[MuTrackID][4][1] = track->GetMomentumDirection().x();
-            MuNVD[MuTrackID][5][1] = track->GetMomentumDirection().y();
-            MuNVD[MuTrackID][6][1] = track->GetMomentumDirection().z();
-            MuNVD[MuTrackID][7][1] =
+          if (muonNEVOD[MuTrackID][0][0] >= 0 &&
+              nbCtrlNVD != muonNEVOD[MuTrackID][0][0]) {
+            muonNEVOD[MuTrackID][0][1] = nbCtrlNVD;
+            muonNEVOD[MuTrackID][1][1] = track->GetPosition().x();
+            muonNEVOD[MuTrackID][2][1] = track->GetPosition().y();
+            muonNEVOD[MuTrackID][3][1] = track->GetPosition().z();
+            muonNEVOD[MuTrackID][4][1] = track->GetMomentumDirection().x();
+            muonNEVOD[MuTrackID][5][1] = track->GetMomentumDirection().y();
+            muonNEVOD[MuTrackID][6][1] = track->GetMomentumDirection().z();
+            muonNEVOD[MuTrackID][7][1] =
                 aStep->GetPreStepPoint()->GetKineticEnergy();
           }
         }
@@ -114,83 +114,83 @@ void SteppingAction::UserSteppingAction(const G4Step *aStep) {
       if (Vname == "SM0x") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
-          MuDCR[MuTrackID][0][nbPlaneDCR][0] = 1;
+          muonDECOR[MuTrackID][0][nbPlaneDCR][0] = 1;
       }
       if (Vname == "SM1x") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
-          MuDCR[MuTrackID][1][nbPlaneDCR][0] = 1;
+          muonDECOR[MuTrackID][1][nbPlaneDCR][0] = 1;
       }
       if (Vname == "SM2x") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
-          MuDCR[MuTrackID][2][nbPlaneDCR][0] = 1;
+          muonDECOR[MuTrackID][2][nbPlaneDCR][0] = 1;
       }
       if (Vname == "SM3x") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
-          MuDCR[MuTrackID][3][nbPlaneDCR][0] = 1;
+          muonDECOR[MuTrackID][3][nbPlaneDCR][0] = 1;
       }
       if (Vname == "SM4x") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
-          MuDCR[MuTrackID][4][nbPlaneDCR][0] = 1;
+          muonDECOR[MuTrackID][4][nbPlaneDCR][0] = 1;
       }
       if (Vname == "SM5x") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
-          MuDCR[MuTrackID][5][nbPlaneDCR][0] = 1;
+          muonDECOR[MuTrackID][5][nbPlaneDCR][0] = 1;
       }
       if (Vname == "SM6x") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
-          MuDCR[MuTrackID][6][nbPlaneDCR][0] = 1;
+          muonDECOR[MuTrackID][6][nbPlaneDCR][0] = 1;
       }
       if (Vname == "SM7x") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
-          MuDCR[MuTrackID][7][nbPlaneDCR][0] = 1;
+          muonDECOR[MuTrackID][7][nbPlaneDCR][0] = 1;
       }
 
       if (Vname == "SM0y") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
-          MuDCR[MuTrackID][0][nbPlaneDCR][1] = 1;
+          muonDECOR[MuTrackID][0][nbPlaneDCR][1] = 1;
       }
       if (Vname == "SM1y") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
-          MuDCR[MuTrackID][1][nbPlaneDCR][1] = 1;
+          muonDECOR[MuTrackID][1][nbPlaneDCR][1] = 1;
       }
       if (Vname == "SM2y") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
-          MuDCR[MuTrackID][2][nbPlaneDCR][1] = 1;
+          muonDECOR[MuTrackID][2][nbPlaneDCR][1] = 1;
       }
       if (Vname == "SM3y") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
-          MuDCR[MuTrackID][3][nbPlaneDCR][1] = 1;
+          muonDECOR[MuTrackID][3][nbPlaneDCR][1] = 1;
       }
       if (Vname == "SM4y") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
-          MuDCR[MuTrackID][4][nbPlaneDCR][1] = 1;
+          muonDECOR[MuTrackID][4][nbPlaneDCR][1] = 1;
       }
       if (Vname == "SM5y") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
-          MuDCR[MuTrackID][5][nbPlaneDCR][1] = 1;
+          muonDECOR[MuTrackID][5][nbPlaneDCR][1] = 1;
       }
       if (Vname == "SM6y") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
-          MuDCR[MuTrackID][6][nbPlaneDCR][1] = 1;
+          muonDECOR[MuTrackID][6][nbPlaneDCR][1] = 1;
       }
       if (Vname == "SM7y") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
         if (nbPlaneDCR >= 0 && nbPlaneDCR < 8)
-          MuDCR[MuTrackID][7][nbPlaneDCR][1] = 1;
+          muonDECOR[MuTrackID][7][nbPlaneDCR][1] = 1;
       }
 
     } // MuTrackID
@@ -202,7 +202,7 @@ void SteppingAction::UserSteppingAction(const G4Step *aStep) {
   if (Vname == "WaterBox") {
     edep = aStep->GetTotalEnergyDeposit();
 
-    NVD_edep = NVD_edep + edep / MeV;
+    energyDepNEVOD += edep / MeV;
   }
   //  }
 
@@ -225,8 +225,8 @@ void SteppingAction::UserSteppingAction(const G4Step *aStep) {
         if (Kv_Eff[mmm] > rand) {
           nc = track->GetVolume()->GetCopyNo();
           if (nc >= 0 && nc < 600) {
-            photoelecNum[nc]++;
-            NVD_npe += 1.;
+            photoelNum[nc]++;
+            particleCountNEVOD++;
           } // proverka nkopy
 
         } // rozigr phot-effecta
@@ -238,7 +238,7 @@ void SteppingAction::UserSteppingAction(const G4Step *aStep) {
       G4int ncnt;
       ncnt = track->GetVolume()->GetCopyNo(); //???
       if (ncnt >= 0 && ncnt < 80)
-        EdepCntSCT[ncnt] += edep / MeV;
+        edepCountSCT[ncnt] += edep / MeV;
     }
   }
 }

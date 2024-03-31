@@ -1,6 +1,7 @@
 #ifndef EVENTACTION_HH
 #define EVENTACTION_HH
 
+#include "FileWriter.hh"
 #include "G4Timer.hh"
 #include "G4UserEventAction.hh"
 
@@ -17,7 +18,7 @@ public:
   void EndOfEventAction(const G4Event *) override;
 
 private:
-  G4Timer *timer = nullptr;
+  G4Timer *fTimer = nullptr;
 };
 
 } // namespace NEVOD

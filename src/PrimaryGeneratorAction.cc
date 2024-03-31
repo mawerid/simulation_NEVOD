@@ -23,9 +23,11 @@ FileReader *PrimaryGeneratorAction::fileReader = nullptr;
 
 PrimaryGeneratorAction::PrimaryGeneratorAction(G4String &fileName,
                                                size_t shift) {
-  G4AutoLock lock(&mutex);
-  if (!fileReader)
-    fileReader = new FileReader(fileName, shift);
+  {
+    G4AutoLock lock(&mutex);
+    if (!fileReader)
+      fileReader = new FileReader(fileName, shift);
+  }
 
   G4int n_particle = 1;
   particleGun = new G4ParticleGun(n_particle);
@@ -41,10 +43,12 @@ PrimaryGeneratorAction::PrimaryGeneratorAction(G4String &fileName,
 
 PrimaryGeneratorAction::~PrimaryGeneratorAction() {
   delete particleGun;
-  G4AutoLock lock(&mutex);
-  if (fileReader) {
-    delete fileReader;
-    fileReader = nullptr;
+  {
+    G4AutoLock lock(&mutex);
+    if (fileReader) {
+      delete fileReader;
+      fileReader = nullptr;
+    }
   }
 }
 
@@ -55,7 +59,7 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event *anEvent) {
   EventInit event;
   if (fileReader) {
     G4AutoLock lock(&mutex);
-    event = fileReader->GetEvent();
+    event = fileReader->getEvent();
   }
 
   G4double shiftX, shiftY, shiftZ;

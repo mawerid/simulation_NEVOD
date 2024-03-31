@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.16)
 project(NEVOD)
 
 
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 #----------------------------------------------------------------------------
 # Find Geant4 package, activating all available UI and Vis drivers by default
 # You can set WITH_GEANT4_UIVIS to OFF via the command line or ccmake/cmake-gui
@@ -14,11 +14,11 @@ project(NEVOD)
 option(WITH_GEANT4_UIVIS "Build example with Geant4 UI and Vis drivers" ON)
 if (WITH_GEANT4_UIVIS)
     find_package(Geant4 REQUIRED ui_all vis_all)
-    set(G4VIS_USE TRUE)
-    set(G4UI_USE TRUE)
+    set(G4VIS_USE ON)
+    set(G4UI_USE ON)
 else ()
     find_package(Geant4 REQUIRED)
-    #    set(G4MULTITHREADED TRUE)
+    #    set(G4MULTITHREADED OFF)
 endif ()
 
 #----------------------------------------------------------------------------

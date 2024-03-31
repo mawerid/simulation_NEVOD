@@ -36,7 +36,7 @@ public:
 
   ~FileReader();
 
-  EventInit GetEvent();
+  EventInit getEvent();
 
 private:
   std::ifstream inputFile;

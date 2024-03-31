@@ -11,7 +11,6 @@
 #include "G4OpBoundaryProcess.hh"
 #include "G4PVPlacement.hh"
 #include "G4Transform3D.hh"
-#include "G4Trd.hh"
 #include "G4Tubs.hh"
 #include "G4VisAttributes.hh"
 
@@ -22,8 +21,8 @@
 
 namespace NEVOD {
 
-extern G4int PerevKM[600][4];
-extern G4int feuNum;
+extern G4int perevKM[600][4];
+extern G4int feuCount;
 
 // int dXY(int DS, int det, double &x, double &y);
 
@@ -1005,17 +1004,17 @@ G4VPhysicalVolume *DetectorConstruction::Construct() {
               Photokat_log[npl][nstr][nmod][i], "Photokat",
               AirTube_l[npl][nstr][nmod][i], false, nkopy, fCheckOverlaps); //
 
-          PerevKM[nkopy][0] = npl;
-          PerevKM[nkopy][1] = nstr;
-          PerevKM[nkopy][2] = nmod;
-          PerevKM[nkopy][3] = i;
+          perevKM[nkopy][0] = npl;
+          perevKM[nkopy][1] = nstr;
+          perevKM[nkopy][2] = nmod;
+          perevKM[nkopy][3] = i;
 
           nkopy++;
         }
       }
     }
   }
-  feuNum = nkopy;
+  feuCount = nkopy;
 
   // --------------- SKT ---------------
 
@@ -1453,8 +1452,8 @@ G4VPhysicalVolume *DetectorConstruction::Construct() {
 
   // --------------- NEVOD-EAS ---------------
 
-  G4float Build47sizeX, Build47sizeY, Build47sizeZ;
-  G4float Build47posX, Build47posY, Build47posZ;
+  G4double Build47sizeX, Build47sizeY, Build47sizeZ;
+  G4double Build47posX, Build47posY, Build47posZ;
   Build47sizeX = 16.;
   Build47sizeY = 52.;
   Build47sizeZ = 10.28 + 0.79;
@@ -1492,8 +1491,8 @@ G4VPhysicalVolume *DetectorConstruction::Construct() {
                         0,                      // copy number
                         fCheckOverlaps);        // overlaps checking
 
-  G4float Build31sizeX, Build31sizeY, Build31sizeZ;
-  G4float Build31posX, Build31posY, Build31posZ;
+  G4double Build31sizeX, Build31sizeY, Build31sizeZ;
+  G4double Build31posX, Build31posY, Build31posZ;
   Build31sizeX = 16.;
   Build31sizeY = 65.;
   Build31sizeZ = 10.28 + 0.79;
@@ -1531,8 +1530,8 @@ G4VPhysicalVolume *DetectorConstruction::Construct() {
                         0,                      // copy number
                         fCheckOverlaps);        // overlaps checking
 
-  G4float Build32lsizeX, Build32lsizeY, Build32lsizeZ;
-  G4float Build32lposX, Build32lposY, Build32lposZ;
+  G4double Build32lsizeX, Build32lsizeY, Build32lsizeZ;
+  G4double Build32lposX, Build32lposY, Build32lposZ;
   Build32lsizeX = 12.;
   Build32lsizeY = 25.;
   Build32lsizeZ = 2.77 + 1.35; //???
@@ -1570,8 +1569,8 @@ G4VPhysicalVolume *DetectorConstruction::Construct() {
                         0,                      // copy number
                         fCheckOverlaps);        // overlaps checking
 
-  G4float Build32hsizeX, Build32hsizeY, Build32hsizeZ;
-  G4float Build32hposX, Build32hposY, Build32hposZ;
+  G4double Build32hsizeX, Build32hsizeY, Build32hsizeZ;
+  G4double Build32hposX, Build32hposY, Build32hposZ;
   Build32hsizeX = 12.;
   Build32hsizeY = 25.;
   Build32hsizeZ = 4.35 + 2.04; //???
@@ -1609,8 +1608,8 @@ G4VPhysicalVolume *DetectorConstruction::Construct() {
                         0,                      // copy number
                         fCheckOverlaps);        // overlaps checking
 
-  G4float Build33sizeX, Build33sizeY, Build33sizeZ;
-  G4float Build33posX, Build33posY, Build33posZ;
+  G4double Build33sizeX, Build33sizeY, Build33sizeZ;
+  G4double Build33posX, Build33posY, Build33posZ;
   Build33sizeX = 15.;
   Build33sizeY = 43.;
   Build33sizeZ = 12.29 + 1.91;
@@ -1648,8 +1647,8 @@ G4VPhysicalVolume *DetectorConstruction::Construct() {
                         0,                      // copy number
                         fCheckOverlaps);        // overlaps checking
 
-  G4float Build6sizeX, Build6sizeY, Build6sizeZ;
-  G4float Build6posX, Build6posY, Build6posZ;
+  G4double Build6sizeX, Build6sizeY, Build6sizeZ;
+  G4double Build6posX, Build6posY, Build6posZ;
   Build6sizeX = 15.;
   Build6sizeY = 65.;
   Build6sizeZ = 12.29 + 1.91;
@@ -1686,8 +1685,8 @@ G4VPhysicalVolume *DetectorConstruction::Construct() {
                         0,                      // copy number
                         fCheckOverlaps);        // overlaps checking
 
-  G4float Build6asizeX, Build6asizeY, Build6asizeZ;
-  G4float Build6aposX, Build6aposY, Build6aposZ;
+  G4double Build6asizeX, Build6asizeY, Build6asizeZ;
+  G4double Build6aposX, Build6aposY, Build6aposZ;
   Build6asizeX = 17.;
   Build6asizeY = 13.;
   Build6asizeZ = 6.97 + 1.8;
@@ -1725,8 +1724,8 @@ G4VPhysicalVolume *DetectorConstruction::Construct() {
                         0,                      // copy number
                         fCheckOverlaps);        // overlaps checking
 
-  G4float Build7sizeX, Build7sizeY, Build7sizeZ;
-  G4float Build7posX, Build7posY, Build7posZ;
+  G4double Build7sizeX, Build7sizeY, Build7sizeZ;
+  G4double Build7posX, Build7posY, Build7posZ;
   Build7sizeX = 29.;
   Build7sizeY = 30.;
   Build7sizeZ = 4.78 + 1.51;
@@ -1763,8 +1762,8 @@ G4VPhysicalVolume *DetectorConstruction::Construct() {
                         0,                      // copy number
                         fCheckOverlaps);        // overlaps checking
 
-  G4float Build9sizeX, Build9sizeY, Build9sizeZ;
-  G4float Build9posX, Build9posY, Build9posZ;
+  G4double Build9sizeX, Build9sizeY, Build9sizeZ;
+  G4double Build9posX, Build9posY, Build9posZ;
   Build9sizeX = 11.;
   Build9sizeY = 11.;
   Build9sizeZ = 4.78 + 1.51; //???
@@ -1801,8 +1800,8 @@ G4VPhysicalVolume *DetectorConstruction::Construct() {
                         0,                      // copy number
                         fCheckOverlaps);        // overlaps checking
 
-  G4float BuildDsizeX, BuildDsizeY, BuildDsizeZ;
-  G4float BuildDposX, BuildDposY, BuildDposZ;
+  G4double BuildDsizeX, BuildDsizeY, BuildDsizeZ;
+  G4double BuildDposX, BuildDposY, BuildDposZ;
   BuildDsizeX = 60.;
   BuildDsizeY = 15.5;
   BuildDsizeZ = 18.21 + 1.33; //???
@@ -1839,8 +1838,8 @@ G4VPhysicalVolume *DetectorConstruction::Construct() {
                         0,                      // copy number
                         fCheckOverlaps);        // overlaps checking
 
-  G4float BuildNewsizeX, BuildNewsizeY, BuildNewsizeZ;
-  G4float BuildNewposX, BuildNewposY, BuildNewposZ;
+  G4double BuildNewsizeX, BuildNewsizeY, BuildNewsizeZ;
+  G4double BuildNewposX, BuildNewposY, BuildNewposZ;
   BuildNewsizeX = 63.;
   BuildNewsizeY = 104.;
   BuildNewsizeZ = 18.21 + 1.33; //???
@@ -1878,8 +1877,8 @@ G4VPhysicalVolume *DetectorConstruction::Construct() {
                         0,                      // copy number
                         fCheckOverlaps);        // overlaps checking
 
-  G4float ReactsizeX, ReactsizeY, ReactsizeZ;
-  G4float ReactposX, ReactposY, ReactposZ;
+  G4double ReactsizeX, ReactsizeY, ReactsizeZ;
+  G4double ReactposX, ReactposY, ReactposZ;
   ReactsizeX = 34.;
   ReactsizeY = 25.;
   ReactsizeZ = 16.9 + 0.92;                            //???
@@ -1917,7 +1916,7 @@ G4VPhysicalVolume *DetectorConstruction::Construct() {
                         fCheckOverlaps);        // overlaps checking
 
   /*
-  G4float csc[9][4][3];
+  G4double csc[9][4][3];
   csc[0][0][0] = -25.36;
   csc[0][0][1] = 5.89;
   csc[0][0][2] = -6.68;
@@ -2039,22 +2038,22 @@ G4VPhysicalVolume *DetectorConstruction::Construct() {
   G4int ist = 0;
   G4int idet = 0;
   G4double dX, dY;
-  G4float RoofNEdx1, RoofNEdx2, RoofNEdy1, RoofNEdy2, RoofNEdz;
-  G4float RoofNEposX, RoofNEposY, RoofNEposZ;
-  G4float AirRoofNEdx1, AirRoofNEdx2, AirRoofNEdy1, AirRoofNEdy2, AirRoofNEdz;
-  G4float FloorNEsizeX, FloorNEsizeY, FloorNEsizeZ;
-  G4float FloorNEposX, FloorNEposY, FloorNEposZ;
-  G4float CaseNEsizeX, CaseNEsizeY, CaseNEsizeZ;
-  G4float CaseNEposX, CaseNEposY, CaseNEposZ;
-  G4float AirCaseNEsizeX, AirCaseNEsizeY, AirCaseNEsizeZ;
-  G4float AirCaseNEposX, AirCaseNEposY, AirCaseNEposZ;
-  G4float ScintNEsizeX, ScintNEsizeY, ScintNEsizeZ;
-  G4float ScintNEposX, ScintNEposY, ScintNEposZ;
+  G4double RoofNEdx1, RoofNEdx2, RoofNEdy1, RoofNEdy2, RoofNEdz;
+  G4double RoofNEposX, RoofNEposY, RoofNEposZ;
+  G4double AirRoofNEdx1, AirRoofNEdx2, AirRoofNEdy1, AirRoofNEdy2, AirRoofNEdz;
+  G4double FloorNEsizeX, FloorNEsizeY, FloorNEsizeZ;
+  G4double FloorNEposX, FloorNEposY, FloorNEposZ;
+  G4double CaseNEsizeX, CaseNEsizeY, CaseNEsizeZ;
+  G4double CaseNEposX, CaseNEposY, CaseNEposZ;
+  G4double AirCaseNEsizeX, AirCaseNEsizeY, AirCaseNEsizeZ;
+  G4double AirCaseNEposX, AirCaseNEposY, AirCaseNEposZ;
+  G4double ScintNEsizeX, ScintNEsizeY, ScintNEsizeZ;
+  G4double ScintNEposX, ScintNEposY, ScintNEposZ;
 
-  G4float WallStatNEXsizeX, WallStatNEXsizeY, WallStatNEYsizeX,
+  G4double WallStatNEXsizeX, WallStatNEXsizeY, WallStatNEYsizeX,
       WallStatNEYsizeY, WallStatNEsizeZ;
-  G4float WallStatNEXposX, WallStatNEXposY1, WallStatNEXposY2, WallStatNEposZ;
-  G4float WallStatNEYposX1, WallStatNEYposX2, WallStatNEYposY;
+  G4double WallStatNEXposX, WallStatNEXposY1, WallStatNEXposY2, WallStatNEposZ;
+  G4double WallStatNEYposX1, WallStatNEYposX2, WallStatNEYposY;
 
   RoofNEdz = 100.;
   RoofNEdx1 = 225.;

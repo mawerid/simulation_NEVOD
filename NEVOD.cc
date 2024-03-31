@@ -10,12 +10,13 @@
 
 #include "Randomize.hh"
 
-#include <fcntl.h>
 #include <iostream>
-#include <unistd.h>
 
-#define G4VIS_USE
+// #define G4VIS_USE
 // #define G4MULTITHREADED
+
+#define EVENT_COUNT 500
+#define SEED 47212 // 345354
 
 #ifdef G4MULTITHREADED
 #include "G4MTRunManager.hh"
@@ -30,51 +31,29 @@
 
 namespace NEVOD {
 
+// shared variables
 G4String input_file;
 size_t input_shift;
-G4String output_file;
 
-G4long N_event = 0;
-G4int otklik;
+G4int feuCount = 0;
+G4long eventCount = 0;
+G4int perevKM[600][4];
+
+// thread local variables
+G4String output_file;
 
 G4long runNum = 0;
 G4long eventNum = 0;
 
-G4long photoelecNum[600];
-G4int PerevKM[600][4];
-G4int feuNum;
-G4float NVD_edep = 0;
-G4float NVD_npe = 0;
+G4long photoelNum[600];
+G4double energyDepNEVOD = 0;
+G4long particleCountNEVOD = 0;
 
-G4double theta = 0, phi = 0; // bundle
-G4float MuNVD[501][8][2];    // bundle
-G4float MuDCR[501][8][8][2];
-// G4float nMuNVD;
-// G4float MuTrackLenNVD;
-// G4float hitSMPLY[8][8]; // bundle new (trig) 04.08.20
+G4double theta = 0, phi = 0;   // bundle
+G4double muonNEVOD[501][8][2]; // bundle
+G4double muonDECOR[501][8][8][2];
 
-G4float EdepCntSCT[80];
-
-// G4float PMDx, PMDy, PMDz, PE, PPx, PPy, PPz, PD; // // massiv, EAS
-
-// G4float nTrackSMX[8], nTrackSMY[8], nTrackSM[8], nTrackSMXw[8],
-// nTrackSMYw[8],
-//     nTrackSMw[8];
-// G4float hSM[8], hSMw[8], nSM, nSMw;
-// G4float muSM, muSMw, muDCR, muDCRw;
-//
-// G4int MuTrackPLX, MuTrackPLY;
-// G4int hitSMPLYe, hitSMPLYo;
-//
-// G4long A, Nfe;
-// G4float AmplKSM[7][4][4][6];
-// G4double Q;
-// G4double amp;
-// G4int npl, nstr, nmod, nfeu;
-//
-// G4float eMuNVD, eMuNVD1;
-//
-// G4float EdepCntSCT1[9][5][2];
+G4double edepCountSCT[80];
 
 } // namespace NEVOD
 
@@ -82,18 +61,22 @@ using namespace NEVOD;
 
 int main(int argc, char **argv) {
 
-  G4String nabor = argv[1];
-  G4String shift = argv[2];
+  if (argc >= 3) {
+    G4String set = argv[1];
+    G4String shift = argv[2];
 
-  input_file = std::string("../ot/OTDCR_") + nabor + ".txt";
-  input_shift = stoull(shift);
-  output_file = std::string("../out/otdcr_") + nabor + "_" + shift + ".dat";
+    input_file = std::string("../ot/OTDCR_") + set + ".txt";
+    input_shift = stoull(shift);
+    output_file = std::string("../out/otdcr_") + set + "_" + shift + ".csv";
+  } else {
+    throw std::invalid_argument("No set number and shift provided.");
+  }
 
   // Seed the random number generator manually
   CLHEP::HepRandom::setTheEngine(new CLHEP::Ranlux64Engine);
 
-  G4long myseed = 47212; // 345354
-  CLHEP::HepRandom::setTheSeed(myseed);
+  G4long seed = SEED;
+  CLHEP::HepRandom::setTheSeed(seed);
 
   // Run manager
 #ifdef G4MULTITHREADED
@@ -104,10 +87,10 @@ int main(int argc, char **argv) {
 #endif
 
   // UserInitialization classes - mandatory
-  G4VUserDetectorConstruction *detector = new DetectorConstruction;
+  auto *detector = new DetectorConstruction;
   runManager->SetUserInitialization(detector);
 
-  G4VModularPhysicsList *physics = new FTFP_BERT; // optical
+  auto *physics = new FTFP_BERT; // optical
 
 #ifndef G4VIS_USE
   auto *opticalPhysics = new G4OpticalPhysics;
@@ -124,49 +107,37 @@ int main(int argc, char **argv) {
 #endif
 
   // UserAction classes
-  G4UserRunAction *run_action = new RunAction;
-  runManager->SetUserAction(run_action);
+  auto *runAction = new RunAction;
+  runManager->SetUserAction(runAction);
 
-  G4VUserPrimaryGeneratorAction *gen_action =
-      new PrimaryGeneratorAction(input_file, input_shift);
-  runManager->SetUserAction(gen_action);
+  auto *generatorAction = new PrimaryGeneratorAction(input_file, input_shift);
+  runManager->SetUserAction(generatorAction);
 
-  G4UserEventAction *event_action = new EventAction;
-  runManager->SetUserAction(event_action);
+  auto *eventAction = new EventAction;
+  runManager->SetUserAction(eventAction);
 
-  G4UserSteppingAction *stepping_action = new SteppingAction;
-  runManager->SetUserAction(stepping_action);
+  auto *steppingAction = new SteppingAction;
+  runManager->SetUserAction(steppingAction);
 
   // Initialize G4 kernel
   runManager->Initialize();
   // Get the pointer to the UI manager and set verbosities
-  G4UImanager *UImanager = G4UImanager::GetUIpointer();
+  auto *UImanager = G4UImanager::GetUIpointer();
   UImanager->ApplyCommand("/run/verbose 0");
   UImanager->ApplyCommand("/event/verbose 0");
   UImanager->ApplyCommand("/tracking/verbose 0");
 
-  //  N_event = 0;
-  //
-  //  runNum = 0;
-  //  eventNum = 0;
-  //  theta = 0;
-  //  phi = 0;
-
-  otklik =
-      open(output_file, O_CREAT | O_WRONLY,
-           S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH); // EAS
-
   // 4 vis
   // Get the pointer to the User Interface manager
 #ifdef G4VIS_USE
-  if (argc == 1 || argc == 3) // Define UI session for interactive mode
-  {
+  if (argc == 1 || argc >= 3) {
+    // Define UI session for interactive mode
     auto *ui = new G4UIExecutive(argc, argv);
     UImanager->ApplyCommand("/control/execute vis.mac");
     ui->SessionStart();
     delete ui;
-  } else // Batch mode
-  {
+  } else {
+    // Batch mode
     G4String command = "/control/execute ";
     G4String fileName = argv[1];
     UImanager->ApplyCommand(command + fileName);
@@ -175,17 +146,10 @@ int main(int argc, char **argv) {
 
   // simulation
 #ifndef G4VIS_USE
-  for (int nevt = 0; nevt < 500; nevt++) {
-
+  for (size_t i = 0; i < EVENT_COUNT; i++) {
     runManager->BeamOn(1);
-
-#ifndef G4MULTITHREADED
-
-#endif
   }
 #endif
-
-  close(otklik);
 
 // 4 vis
 #ifdef G4VIS_USE
