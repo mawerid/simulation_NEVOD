@@ -2487,7 +2487,7 @@ G4VPhysicalVolume *DetectorConstruction::Construct() {
   */
 
   auto buildVisAtt = new G4VisAttributes(brown);
-  buildVisAtt->SetVisibility(true);
+  buildVisAtt->SetVisibility(false);
   buildVisAtt->SetForceWireframe(true);
 
   logBuild47->SetVisAttributes(buildVisAtt);
