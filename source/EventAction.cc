@@ -286,7 +286,7 @@ void EventAction::EndOfEventAction(const G4Event *) {
       amplitude = long(amplitude_d);
       amplitudeKSM[planeNum][strideNum][moduleNum][feuNum] = amplitude;
     } // if(photoelCount > 0)
-  }   // end cikl po feu
+  } // end cikl po feu
 
   EventOutput event{eventCount,
                     runNum,

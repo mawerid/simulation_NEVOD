@@ -26,11 +26,11 @@ void FileWriter::writeEvent(const EventOutput &event,
              << ',' << event.nSM << ',' << event.muDCRw << ',' << event.muSMw
              << ',' << event.nSMw << ',';
 
-  for (const auto &item : amplitudeKSM)
-    for (const auto &kItem : item)
-      for (const auto &jItem : kItem)
-        for (const auto &amplitude : jItem)
-          outputFile << amplitude << ',';
+  for (const auto &plane : amplitudeKSM)
+    for (const auto &stride : plane)
+      for (const auto &module : stride)
+        for (const auto &feu_amplitude : module)
+          outputFile << feu_amplitude << ',';
 
   for (const auto &i : hSM)
     outputFile << i << ',';

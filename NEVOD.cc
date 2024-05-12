@@ -12,8 +12,8 @@
 
 #include <iostream>
 
-#define G4VIS_USE
-// #define G4MULTITHREADED
+//#define G4VIS_USE
+//  #define G4MULTITHREADED
 
 #define EVENT_COUNT 500
 #define SEED 47212 // 345354

@@ -1,13 +1,15 @@
 # To DO
 
-- boost speed
-- add energy as input
-- visualize running particles
+- [DONE] boost speed
+- [DONE] add energy as input
+- [DONE] visualize running particles
 - [DONE] clear useless writing to file
 - profile code
-- clear main file
-- check boosting simulation from cmake files
+- [DONE] clear main file
+- [DONE] check boosting simulation from cmake files
 - add multithreading
+- [NO USE] add time as output (in file)
+- [DONE] modify KSM amp out as in exp data
 
 For MT:
 

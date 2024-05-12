@@ -110,6 +110,14 @@ void SteppingAction::UserSteppingAction(const G4Step *aStep) {
         }
       } // CtrlNVD
 
+      if (Vname == "physCount") {
+        edep = aStep->GetTotalEnergyDeposit();
+        G4int ncnt;
+        ncnt = track->GetVolume()->GetCopyNo(); //???
+        if (ncnt >= 0 && ncnt < 80)
+          edepCountSCT[ncnt] += edep / MeV;
+      }
+
       // new 30.03.2020
       if (Vname == "SM0x") {
         nbPlaneDCR = track->GetVolume()->GetCopyNo();
@@ -233,13 +241,7 @@ void SteppingAction::UserSteppingAction(const G4Step *aStep) {
       }   // proverka diapazona energii
     }     // popal v photokatod
 
-    if (Vname == "physScint") {
-      edep = aStep->GetTotalEnergyDeposit();
-      G4int ncnt;
-      ncnt = track->GetVolume()->GetCopyNo(); //???
-      if (ncnt >= 0 && ncnt < 80)
-        edepCountSCT[ncnt] += edep / MeV;
-    }
+
   }
 }
 

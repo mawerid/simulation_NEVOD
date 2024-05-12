@@ -1,4 +1,5 @@
 #include "FileReader.hh"
+#include "Randomize.hh"
 
 namespace NEVOD {
 
@@ -31,12 +32,14 @@ EventInit FileReader::getEvent() {
   if (eventList.empty()) {
     for (int i = 0; i < EVENT_BUFFER_SIZE; i++) {
       EventInit event;
-      inputFile >> event.runNum >> event.eventNum >> event.startX >>
-          event.startY >> event.startZ >> event.endX >> event.endY >>
-          event.endZ;
 
-      event.energy = 101.0;
-      event.particle_num = 5;
+      event.energy = 10.0;
+      event.particle_num =
+          5 + (static_cast<G4int>(rint(G4Random().flat())) / 2);
+
+      inputFile >> event.runNum >> event.eventNum >> // event.energy >>
+          event.startX >> event.startY >> event.startZ >> event.endX >>
+          event.endY >> event.endZ;
 
       eventList.push_back(event);
     }

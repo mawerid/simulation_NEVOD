@@ -96,6 +96,7 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event *anEvent) {
     theta = std::acos(-1. * directionZ / direction_length) * 180. / M_PI;
   else
     theta = 0.;
+
   if (directionX != 0.)
     phi = std::atan(directionY / directionX) * 180. / M_PI;
   else {
@@ -106,12 +107,14 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event *anEvent) {
     if (directionY < 0.)
       phi = 270.;
   }
+
   if (directionY == 0.) {
     if (directionX > 0.)
       phi = 0.;
     if (directionX < 0.)
       phi = 180.;
   }
+
   if (phi > 0.) {
     if (directionX > 0. && directionY > 0.)
       phi += 0.;
@@ -124,15 +127,20 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event *anEvent) {
     if (directionX < 0. && directionY > 0.)
       phi += 180.;
   }
+
   if (phi >= 0. && phi < 180.)
     phi += 180.; // experiment DECOR, muon bundles
   else
     phi -= 180.; // experiment DECOR, muon bundles
 
+#ifdef G4VIS_USE
+  particle = particleTable->FindParticle("geantino");
+#else
   if (event.particle_num == 5)
     particle = particleTable->FindParticle("mu+");
   if (event.particle_num == 6)
     particle = particleTable->FindParticle("mu-");
+#endif
 
   particleGun->SetParticleDefinition(particle);
 
