@@ -21,7 +21,7 @@
 
 namespace NEVOD {
 
-extern G4int perevKM[600][4];
+extern G4int perevKM[546][4];
 extern G4int feuCount;
 
 // int dXY(int DS, int det, double &x, double &y);

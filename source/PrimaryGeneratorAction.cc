@@ -65,7 +65,6 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event *anEvent) {
   G4double shiftX, shiftY, shiftZ;
   G4double directionX, directionY, directionZ;
   G4double track_length;
-  G4double direction_length;
 
   shiftX = 4.5;
   shiftY = 13.;
@@ -82,56 +81,20 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event *anEvent) {
   event.endZ -= shiftZ;
 
   track_length =
-      sqrt((event.endX - event.startX) * (event.endX - event.startX) +
-           (event.endY - event.startY) * (event.endY - event.startY) +
-           (event.endZ - event.startZ) * (event.endZ - event.startZ));
+      std::hypot((event.endX - event.startX), (event.endY - event.startY),
+                 (event.endZ - event.startZ));
 
   directionX = (event.endX - event.startX) / track_length;
   directionY = (event.endY - event.startY) / track_length;
   directionZ = (event.endZ - event.startZ) / track_length;
 
-  direction_length = sqrt(directionX * directionX + directionY * directionY +
-                          directionZ * directionZ);
-  if (direction_length != 0.)
-    theta = std::acos(-1. * directionZ / direction_length) * 180. / M_PI;
-  else
-    theta = 0.;
+  // -1 * z because angles are the angles of origin, not direction
+  theta = std::acos(-1 * directionZ) * 180. / M_PI;
 
-  if (directionX != 0.)
-    phi = std::atan(directionY / directionX) * 180. / M_PI;
-  else {
-    if (directionY == 0.)
-      phi = 0.;
-    if (directionY > 0.)
-      phi = 90.;
-    if (directionY < 0.)
-      phi = 270.;
-  }
+  phi = std::atan2(directionY, directionX) * 180. / M_PI;
 
-  if (directionY == 0.) {
-    if (directionX > 0.)
-      phi = 0.;
-    if (directionX < 0.)
-      phi = 180.;
-  }
-
-  if (phi > 0.) {
-    if (directionX > 0. && directionY > 0.)
-      phi += 0.;
-    if (directionX < 0. && directionY < 0.)
-      phi += 180.;
-  }
-  if (phi < 0.) {
-    if (directionX > 0. && directionY < 0.)
-      phi += 360.;
-    if (directionX < 0. && directionY > 0.)
-      phi += 180.;
-  }
-
-  if (phi >= 0. && phi < 180.)
-    phi += 180.; // experiment DECOR, muon bundles
-  else
-    phi -= 180.; // experiment DECOR, muon bundles
+  if (phi < 0.)
+    phi += 360.;
 
 #ifdef G4VIS_USE
   particle = particleTable->FindParticle("geantino");

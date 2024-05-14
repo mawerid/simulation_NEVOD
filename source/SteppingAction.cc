@@ -19,7 +19,7 @@
 
 namespace NEVOD {
 
-extern G4long photoelNum[600];
+extern G4long photoelNum[546];
 
 extern G4double energyDepNEVOD;
 extern G4long particleCountNEVOD;

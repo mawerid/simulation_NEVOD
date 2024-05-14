@@ -21,7 +21,7 @@ double normDistribution(double a, double sigma) {
 // shared variables
 extern G4long eventCount;
 extern G4int feuCount;
-extern G4int perevKM[600][4];
+extern G4int perevKM[546][4];
 
 // thread local variables
 // extern G4int otklik;
@@ -29,7 +29,7 @@ extern G4String output_file;
 
 extern G4long runNum;
 extern G4long eventNum;
-extern G4long photoelNum[600];
+extern G4long photoelNum[546];
 extern G4double energyDepNEVOD;
 extern G4long particleCountNEVOD;
 
@@ -86,7 +86,7 @@ void EventAction::EndOfEventAction(const G4Event *) {
   G4long hitSMPLYe, hitSMPLYo;
 
   G4long amplitude, photoelCount;
-  G4long amplitudeKSM[7][4][4][6];
+  G4double amplitudeKSM[7][4][4][6];
   G4double Q;
   G4double amplitude_d;
   G4long planeNum, strideNum, moduleNum, feuNum;
@@ -282,9 +282,9 @@ void EventAction::EndOfEventAction(const G4Event *) {
         amplitude_d += Q;
       }
       if (amplitude_d < 1.0)
-        amplitude_d = 1;
-      amplitude = long(amplitude_d);
-      amplitudeKSM[planeNum][strideNum][moduleNum][feuNum] = amplitude;
+        amplitude_d = 1.0;
+//      amplitude = long(amplitude_d);
+      amplitudeKSM[planeNum][strideNum][moduleNum][feuNum] = amplitude_d;
     } // if(photoelCount > 0)
   } // end cikl po feu
 

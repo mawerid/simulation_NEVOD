@@ -22,7 +22,7 @@ public:
   G4double energyStart{};
   G4double energyEnd{};
 
-  G4long muDCR, muSM, nSM, muDCRw, muSMw, nSMw;
+  G4long muDCR{}, muSM{}, nSM{}, muDCRw{}, muSMw{}, nSMw{};
 
   EventOutput() = default;
 
@@ -36,7 +36,7 @@ public:
   ~FileWriter();
 
   void writeEvent(const EventOutput &event,
-                  const G4long (&amplitudeKSM)[7][4][4][6],
+                  const G4double (&amplitudeKSM)[7][4][4][6],
                   const G4long (&hSM)[8], const G4long (&nTrackSMX)[8],
                   const G4long (&nTrackSMY)[8], const G4long (&nTrackSM)[8],
                   const G4double (&edepCountSCT)[9][5][2]);

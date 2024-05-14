@@ -12,7 +12,7 @@ FileWriter::FileWriter(G4String &fileName) {
 FileWriter::~FileWriter() { outputFile.close(); }
 
 void FileWriter::writeEvent(const EventOutput &event,
-                            const G4long (&amplitudeKSM)[7][4][4][6],
+                            const G4double (&amplitudeKSM)[7][4][4][6],
                             const G4long (&hSM)[8],
                             const G4long (&nTrackSMX)[8],
                             const G4long (&nTrackSMY)[8],
@@ -26,11 +26,15 @@ void FileWriter::writeEvent(const EventOutput &event,
              << ',' << event.nSM << ',' << event.muDCRw << ',' << event.muSMw
              << ',' << event.nSMw << ',';
 
-  for (const auto &plane : amplitudeKSM)
-    for (const auto &stride : plane)
-      for (const auto &module : stride)
-        for (const auto &feu_amplitude : module)
-          outputFile << feu_amplitude << ',';
+  G4int nms[7] = {4, 3, 4, 3, 4, 3, 4}, plane_num = 7, feu_num = 6;
+
+  for (G4int plane = 0; plane < plane_num; plane++)
+    for (G4int stride = 0; stride < nms[plane]; stride++)
+      for (G4int module = 0; module < nms[plane]; module++)
+        for (G4int feu_amplitude = 0; feu_amplitude < feu_num; feu_amplitude++)
+          outputFile << "1,"
+                     << amplitudeKSM[plane][stride][module][feu_amplitude]
+                     << ',';
 
   for (const auto &i : hSM)
     outputFile << i << ',';

@@ -37,7 +37,7 @@ size_t input_shift;
 
 G4int feuCount = 0;
 G4long eventCount = 0;
-G4int perevKM[600][4];
+G4int perevKM[546][4];
 
 // thread local variables
 G4String output_file;
@@ -45,7 +45,7 @@ G4String output_file;
 G4long runNum = 0;
 G4long eventNum = 0;
 
-G4long photoelNum[600];
+G4long photoelNum[546];
 G4double energyDepNEVOD = 0;
 G4long particleCountNEVOD = 0;
 
