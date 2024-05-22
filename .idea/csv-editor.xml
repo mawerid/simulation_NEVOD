@@ -17,6 +17,13 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="/output/otdcr_3_0.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="/output/otdcr_928_0.csv">
           <value>
             <Attribute>
