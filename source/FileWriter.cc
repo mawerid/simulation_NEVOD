@@ -32,7 +32,7 @@ void FileWriter::writeEvent(const EventOutput &event,
     for (G4int stride = 0; stride < nms[plane]; stride++)
       for (G4int module = 0; module < nms[plane]; module++)
         for (G4int feu_amplitude = 0; feu_amplitude < feu_num; feu_amplitude++)
-          outputFile << "1,"
+          outputFile //<< "1,"
                      << amplitudeKSM[plane][stride][module][feu_amplitude]
                      << ',';
 
