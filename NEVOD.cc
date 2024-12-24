@@ -15,7 +15,7 @@
 //#define G4VIS_USE
 //  #define G4MULTITHREADED
 
-#define EVENT_COUNT 500
+#define EVENT_COUNT 1000
 #define SEED 47212 // 345354
 
 #ifdef G4MULTITHREADED
