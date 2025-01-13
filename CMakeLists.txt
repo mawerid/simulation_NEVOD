@@ -2,7 +2,7 @@
 # Setup the project
 #
 cmake_minimum_required(VERSION 3.20)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 project(nevod)
 
 # ----------------------------------------------------------------------------
@@ -56,8 +56,8 @@ include_directories(${ROOT_INCLUDE_DIRS})
 # relies on these scripts being in the current working directory.
 #
 set(NEVOD_SCRIPTS
-    run.mac
-    vis.mac
+    config/run.mac
+    config/vis.mac
 )
 
 foreach(_script ${NEVOD_SCRIPTS})
