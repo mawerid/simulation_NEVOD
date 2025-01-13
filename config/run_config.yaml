@@ -1,0 +1,13 @@
+# TODO generate proper config params
+# number of threads
+# number of epochs
+# batch size
+# initial offset
+# input file path
+# output dir path
+# verbose
+# use old version of NEVOD configs
+# use UI
+# seed
+# save verbose output flag
+# save verbose output dir

@@ -2,7 +2,6 @@
 *.idea
 new_version/*
 old_version/*
-input
-output
+data
 cmake-build-debug
 build

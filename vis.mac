@@ -1,6 +1,6 @@
 # Macro file for the visualization setting in the initialization phase 
 # of the NEVOD when running in interactive mode
-#
+# TODO: create proper vis.mac
 
 # Use these open statements to open selected visualization
 #
