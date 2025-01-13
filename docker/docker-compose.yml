@@ -1,0 +1,15 @@
+services:
+  simulation:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    volumes:
+      - ./data:/workspace/data
+      - ./config:/workspace/config
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+    devices:
+      - "/dev/dri:/dev/dri"
+    network_mode: "host"
+    command: ["/workspace/build/nevod"]

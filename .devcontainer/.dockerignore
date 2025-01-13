@@ -1,0 +1,21 @@
+# Ignore node_modules
+node_modules
+
+# Ignore build directories
+build
+root-src
+root-build
+geant4-src
+geant4-build
+
+# Ignore temporary files
+*.tmp
+*.log
+*.swp
+*.swo
+*.bak
+*.old
+
+# Ignore system files
+.DS_Store
+Thumbs.db

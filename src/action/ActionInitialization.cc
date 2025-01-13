@@ -1,32 +1,32 @@
-#include "ActionInitialization.hh"
-#include "EventAction.hh"
-#include "PrimaryGeneratorAction.hh"
-#include "RunAction.hh"
-#include "SteppingAction.hh"
+#include "action/ActionInitialization.hh"
 
-namespace NEVOD {
+#include "action/EventAction.hh"
+#include "action/PrimaryGeneratorAction.hh"
+#include "action/RunAction.hh"
+#include "action/SteppingAction.hh"
 
-extern G4String input_file;
-extern size_t input_shift;
+namespace nevod {
+
+ActionInitialization::ActionInitialization(Communicator* communicator, InputManager* input_manager)
+    : G4VUserActionInitialization(), communicator_(communicator), input_manager_(input_manager);
 
 void ActionInitialization::BuildForMaster() const {
-  auto runAction = new RunAction;
-  SetUserAction(runAction);
+  auto run_action = new RunAction(communicator_);
+  SetUserAction(run_action);
 }
 
 void ActionInitialization::Build() const {
-
-  auto generator = new PrimaryGeneratorAction(input_file, input_shift);
+  auto generator = new PrimaryGeneratorAction(communicator_, input_manager_);
   SetUserAction(generator);
 
-  auto runAction = new RunAction;
-  SetUserAction(runAction);
+  auto run_action = new RunAction(communicator_);
+  SetUserAction(run_action);
 
-  auto eventAction = new EventAction;
-  SetUserAction(eventAction);
+  auto event_action = new EventAction(run_action, communicator_);
+  SetUserAction(event_action);
 
-  auto steppingAction = new SteppingAction;
-  SetUserAction(steppingAction);
+  auto stepping_action = new SteppingAction(event_action, communicator_);
+  SetUserAction(stepping_action);
 }
 
-} // namespace NEVOD
+}  // namespace nevod
