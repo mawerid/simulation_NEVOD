@@ -1,6 +1,7 @@
 #ifndef EVENT_DATA_HH
 #define EVENT_DATA_HH
 
+#include "G4ThreeVector.hh"
 #include "globals.hh"
 
 namespace nevod {
@@ -8,14 +9,25 @@ namespace nevod {
 using vector_3d = std::vector<std::vector<std::vector<G4double>>>;
 using vector_4d = std::vector<std::vector<std::vector<std::vector<G4double>>>>;
 
+struct TrackData {
+  G4int detected_copy_num = -1;
+  G4ThreeVector coordinate{};
+  G4ThreeVector momentum{};
+  G4double energy{};
+
+  TrackData() = default;
+
+  ~TrackData() = default;
+};
+
 struct EventData {
   G4long event_count{};
   G4long run_num{};
   G4long event_num{};
 
   // Initial data
-  G4double start_x{}, start_y{}, start_z{};
-  G4double end_x{}, end_y{}, end_z{};
+  G4ThreeVector start{};
+  G4ThreeVector end{};
 
   G4double energy{};
   G4int particle_num{};
@@ -30,24 +42,27 @@ struct EventData {
   G4double energy_start{};
   G4double energy_end{};
 
-  // DECOR
-  G4long mu_decor{}, mu_sm{}, n_sm{}, mu_decor_w{}, mu_sm_w{}, n_sm_w{};
+  std::chrono::duration<double> duration{};
 
-  std::vector<G4long> h_sm;
-  std::vector<G4long> n_track_sm;
-  std::vector<G4long> n_track_sm_x;
-  std::vector<G4long> n_track_sm_y;
+  // NEVOD
+  std::pair<TrackData, TrackData> muon_nevod{};
+
+  // DECOR
+  vector_3d muon_decor;
 
   // SCT
-  vector_3d edep_count_sct;
+  std::vector<G4double> edep_count_sct_flatten;
 
   // CWD NEVOD
-  vector_4d amplitude_qsm;
+  std::vector<G4int> photoelectron_num;
+  // vector_4d amplitude_qsm;
 
+  // TODO: write proper constructor with initialization, loading and saving in file
   EventData() = default;
 
   ~EventData() = default;
 };
+
 }  // namespace nevod
 
 #endif  // EVENT_DATA_HH

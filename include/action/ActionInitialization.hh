@@ -2,6 +2,10 @@
 #define ACTIONINITIALIZATION_HH
 
 #include "G4VUserActionInitialization.hh"
+#include "action/EventAction.hh"
+#include "action/PrimaryGeneratorAction.hh"
+#include "action/RunAction.hh"
+#include "action/SteppingAction.hh"
 #include "control/Communicator.hh"
 #include "control/InputManager.hh"
 

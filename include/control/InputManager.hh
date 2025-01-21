@@ -48,9 +48,9 @@ class InputManager {
 
   G4int GetFilesNumber();
 
-  std::vector<DataFile> GetNextFiles(G4int files_num);
+  std::vector<DataFile>& GetNextFiles(G4int files_num);
 
-  DataFile GetNextFile();
+  DataFile& GetNextFile();
 };
 
 }  // namespace nevod

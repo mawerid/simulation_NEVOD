@@ -1,6 +1,8 @@
 #ifndef RUNACTION_HH
 #define RUNACTION_HH
 
+#include "G4Run.hh"
+#include "G4RunManager.hh"
 #include "G4UserRunAction.hh"
 #include "action/PrimaryGeneratorAction.hh"
 #include "control/Communicator.hh"

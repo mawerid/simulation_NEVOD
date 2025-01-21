@@ -42,10 +42,21 @@ file(GLOB_RECURSE sources ${PROJECT_SOURCE_DIR}/src/*.cc)
 file(GLOB_RECURSE headers ${PROJECT_SOURCE_DIR}/include/*.hh)
 
 # ----------------------------------------------------------------------------
+# Add yaml-cpp
+include(FetchContent)
+
+FetchContent_Declare(
+    yaml-cpp
+    GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
+    GIT_TAG 0.8.0
+)
+FetchContent_MakeAvailable(yaml-cpp)
+
+# ----------------------------------------------------------------------------
 # Add the executable, and link it to the Geant4 libraries
 #
 add_executable(nevod main.cc ${sources} ${headers})
-target_link_libraries(nevod ${Geant4_LIBRARIES} ${ROOT_LIBRARIES})
+target_link_libraries(nevod ${Geant4_LIBRARIES} ${ROOT_LIBRARIES} yaml-cpp::yaml-cpp)
 
 # message(${ROOT_INCLUDE_DIRS})
 include_directories(${ROOT_INCLUDE_DIRS})

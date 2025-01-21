@@ -1,6 +1,7 @@
 #ifndef WATER_SENSITIVE_DETECTOR_HH
 #define WATER_SENSITIVE_DETECTOR_HH
 
+#include "G4SystemOfUnits.hh"
 #include "G4VSensitiveDetector.hh"
 #include "control/Communicator.hh"
 #include "control/EventData.hh"
@@ -9,7 +10,7 @@ class G4Step;
 namespace nevod {
 
 class WaterSensetiveDetector : public G4VSensitiveDetector {
-  Communicator* communicator;
+  Communicator* communicator_;
 
  public:
   WaterSensetiveDetector(G4String name, Communicator* communicator);

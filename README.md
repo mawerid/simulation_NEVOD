@@ -7,3 +7,5 @@
 - write proper config reader (if it's possible)
 - rewrite using smart pointers
 - rename all files .cc and .hh in repo
+- можно ли использовать встроенные материалы из geant4 для моделирования? (железо, бетон, воздух)
+- зачем хранить в классе ссылки на волюмы?

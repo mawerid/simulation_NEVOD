@@ -1,10 +1,8 @@
 #include "action/RunAction.hh"
 
-#include "G4Run.hh"
-
 namespace nevod {
 
-RunAction::RunAction(Communicator* communicator): G4UserRunAction(), communicator_(communicator);
+RunAction::RunAction(Communicator* communicator): G4UserRunAction(), communicator_(communicator) {}
 
 RunAction::~RunAction() = default;
 

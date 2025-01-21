@@ -1,13 +1,28 @@
-# TODO generate proper config params
-# number of threads
-# number of epochs
-# batch size
-# initial offset
-# input file path
-# output dir path
-# verbose
-# use old version of NEVOD configs
-# use UI
-# seed
-# save verbose output flag
-# save verbose output dir
+# set 0 to disable, set -1 to use all available
+thread_num: 8
+
+epochs: 10
+batch_size: 32
+
+initial_offset: 0
+input_file_path: "data"
+output_dir_path: "output"
+
+verbose: true
+use_old_nevod_configs: true
+use_old_sct_configs: true
+use_ui: false
+
+seed: 47212
+
+save_verbose_output_flag: false
+save_verbose_output_dir: "logs"
+
+# disable/enable constructions using this flags
+build_nevod_only: false
+build_cwd: true
+build_sct: true
+build_decor: true
+build_eas: true
+build_prisma: true
+build_uran: true

@@ -1,6 +1,7 @@
 #ifndef STEPPINGACTION_HH
 #define STEPPINGACTION_HH
 
+#include "G4UImanager.hh"
 #include "G4UserSteppingAction.hh"
 #include "control/Communicator.hh"
 #include "globals.hh"
@@ -11,7 +12,8 @@ class EventAction;
 
 class SteppingAction : public G4UserSteppingAction {
   Communicator* communicator_;
-  G4int step_count_;
+  G4int step_count_ = 0;
+  G4int max_step_count_;
 
  public:
   SteppingAction(EventAction* event_action, Communicator* communicator);

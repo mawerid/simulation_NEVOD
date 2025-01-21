@@ -1,17 +1,24 @@
 #ifndef DETECTORCONSTRUCTION_HH
 #define DETECTORCONSTRUCTION_HH
 
+#include "G4Box.hh"
+#include "G4LogicalBorderSurface.hh"
+#include "G4LogicalSkinSurface.hh"
+#include "G4LogicalVolume.hh"
+#include "G4NistManager.hh"
+#include "G4OpticalSurface.hh"
+#include "G4PVPlacement.hh"
+#include "G4SystemOfUnits.hh"
+#include "G4Tubs.hh"
 #include "G4VUserDetectorConstruction.hh"
+#include "G4VisAttributes.hh"
 #include "control/Communicator.hh"
 #include "globals.hh"
 
-#define SCT_COUNT 80
 #define DECOR_COUNT 8
 #define DECOR_CHAMBER_COUNT 8
 
-class G4Box;
-class G4LogicalVolume;
-class G4VPhysicalVolume;
+#define BOX_SIDE_COUNT 6
 
 namespace nevod {
 
@@ -19,57 +26,72 @@ class DetectorConstruction : public G4VUserDetectorConstruction {
  public:
   DetectorConstruction();
   DetectorConstruction(Communicator* communicator);
-  ~DetectorConstruction() override;
+  ~DetectorConstruction() override = default;
 
   G4VPhysicalVolume* Construct() override;
   void ConstructSDandField() override;
 
  private:
-  void BuildWorld();
-  void BuildCWD();
-  void BuildDECOR();
-  void BuildSCT();
+  void GenerateMaterials();
+
+  G4LogicalVolume* BuildNEVOD(G4LogicalVolume* world_log);
+  void BuildOtherBuildings(G4LogicalVolume* world_log);
+
+  // NEVOD
+  void BuildPMT();
+  void BuildQSM();
+  void BuildCWD(G4LogicalVolume* water_log);
+
+  // DECOR
+  void BuildDECOR(G4LogicalVolume* world_log);
+
+  // SCT
+  void BuildSCT(G4LogicalVolume* world_log, G4LogicalVolume* water_log);
+
+  // PRISMA-URAN
   void BuildPRISMA();
   void BuildURAN();
-  void BuildEAS();
 
-  // TODO add building of each PMT and QSM
+  // NEVOD-EAS
+  void BuildEAS();
 
   Communicator* communicator_;
 
   // option to activate checking of volumes overlaps
-  G4bool check_overlaps = true;
+  G4bool check_overlaps_ = true;
 
   G4double experimental_hall_x_;
   G4double experimental_hall_y_;
   G4double experimental_hall_z_;
 
-  // SCT
-  G4Box* boxCount[SCT_COUNT]{};
-  G4LogicalVolume* logCount[SCT_COUNT]{};
-  G4VPhysicalVolume* physCount[SCT_COUNT]{};
+  // Configuration
+  ConstructionFlags construction_flags_;
 
-  G4Box* boxCountA[SCT_COUNT]{};
-  G4LogicalVolume* logCountA[SCT_COUNT]{};
-  G4VPhysicalVolume* physCountA[SCT_COUNT]{};
+  // CWD
+  G4int cwd_plane_number_;
+  std::vector<G4int> stride_config_;
+  std::vector<G4int> qsm_config_;
 
-  G4Box* boxScint[SCT_COUNT]{};
-  G4LogicalVolume* logScint[SCT_COUNT]{};
-  G4VPhysicalVolume* physScint[SCT_COUNT]{};
+  // SCT (2 for outer and inner)
+  std::pair<G4int, G4int> sct_plane_number_;
+  std::pair<G4int, G4int> sct_counter_number_;
+  std::vector<std::pair<G4Box*, G4Box*>> sct_counter_box_{};
+  std::vector<std::pair<G4LogicalVolume*, G4LogicalVolume*>> sct_counter_log_{};
+  std::vector<std::pair<G4VPhysicalVolume*, G4VPhysicalVolume*>> sct_counter_phys_{};
 
-  // DECOR
-  G4Box* boxSMx[DECOR_COUNT][DECOR_CHAMBER_COUNT]{};
-  G4LogicalVolume* logSMx[DECOR_COUNT][DECOR_CHAMBER_COUNT]{};
-  G4VPhysicalVolume* physSMx[DECOR_COUNT][DECOR_CHAMBER_COUNT]{};
+  std::vector<G4Box*> sct_scint_box_{};
+  std::vector<G4LogicalVolume*> sct_scint_log_{};
+  std::vector<G4VPhysicalVolume*> sct_scint_phys_{};
 
-  G4Box* boxSMy[DECOR_COUNT][DECOR_CHAMBER_COUNT]{};
-  G4LogicalVolume* logSMy[DECOR_COUNT][DECOR_CHAMBER_COUNT]{};
-  G4VPhysicalVolume* physSMy[DECOR_COUNT][DECOR_CHAMBER_COUNT]{};
+  // DECOR (2 for X and Y stripes)
+  std::vector<std::vector<std::pair<G4Box*, G4Box*>>> super_module_box_;
+  std::vector<std::vector<std::pair<G4LogicalVolume*, G4LogicalVolume*>>> super_module_log_;
+  std::vector<std::vector<std::pair<G4VPhysicalVolume*, G4VPhysicalVolume*>>> super_module_phys_;
 
-  // mu track
-  G4Box* boxCtrlNVD[8]{};
-  G4LogicalVolume* logCtrlNVD[8]{};
-  G4VPhysicalVolume* physCtrlNVD[8]{};
+  // mu track detection in NEVOD
+  std::vector<G4Box*> control_nevod_box_{BOX_SIDE_COUNT};
+  std::vector<G4LogicalVolume*> control_nevod_log_{BOX_SIDE_COUNT};
+  std::vector<G4VPhysicalVolume*> control_nevod_phys_{BOX_SIDE_COUNT};
 
   /*
   // NEVOD-EAS
