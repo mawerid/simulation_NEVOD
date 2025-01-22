@@ -101,6 +101,11 @@ void Communicator::SetQSMId(const std::vector<PMTId>& id_qsm) {
   id_qsm_ = id_qsm;
 }
 
+void Communicator::SetCounterId(const std::vector<CounterId>& id_sct) {
+  G4AutoLock lock(&mutex_);
+  id_sct_ = id_sct;
+}
+
 SimulationParams& Communicator::GetSimulationParams() {
   G4AutoLock lock(&mutex_);
   return simulation_params_;
@@ -125,6 +130,11 @@ G4int Communicator::GetCountSCT() {
 PMTId Communicator::GetQSMId(const G4int copy_number) {
   G4AutoLock lock(&mutex_);
   return id_qsm_[copy_number];
+}
+
+CounterId Communicator::GetCounterId(const G4int copy_number) {
+  G4AutoLock lock(&mutex_);
+  return id_sct_[copy_number];
 }
 
 }  // namespace nevod

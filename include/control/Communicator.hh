@@ -44,7 +44,11 @@ enum struct SCTConfig {
   NEW_CONFIGURATION
 };
 
-struct CounterId {};
+struct CounterId {
+  G4int side;
+  G4int plane;
+  G4int row;
+};
 
 struct SimulationParams {
   G4int thread_num = 0;
@@ -84,7 +88,7 @@ class Communicator {
   void SetCountPMT(const G4int count_pmt);
   void SetCountSCT(const G4int count_sct);
   void SetQSMId(const std::vector<PMTId>& id_qsm);
-  void GetCounterId(const std::vector<CounterId>& id_qsm);
+  void SetCounterId(const std::vector<CounterId>& id_sct);
 
   SimulationParams& GetSimulationParams();
   EventData* GetEventData();

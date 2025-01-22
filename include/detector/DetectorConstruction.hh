@@ -15,10 +15,32 @@
 #include "control/Communicator.hh"
 #include "globals.hh"
 
+#define PMT_PER_QSM 6
+
 #define DECOR_COUNT 8
 #define DECOR_CHAMBER_COUNT 8
 
 #define BOX_SIDE_COUNT 6
+
+// Template for 3D vector
+template <typename T>
+using Vector3D = std::vector<std::vector<std::vector<T>>>;
+
+// Template for 4D vector
+template <typename T>
+using Vector4D = std::vector<std::vector<std::vector<std::vector<T>>>>;
+
+// Function to initialize a 3D vector
+template <typename T>
+Vector3D<T> initVector3D(size_t dim1, size_t dim2, size_t dim3, T init_value = nullptr) {
+  return Vector3D<T>(dim1, std::vector<std::vector<T>>(dim2, std::vector<T>(dim3, init_value)));
+}
+
+// Function to initialize a 4D vector
+template <typename T>
+Vector4D<T> initVector4D(size_t dim1, size_t dim2, size_t dim3, size_t dim4, T init_value = nullptr) {
+  return Vector4D<T>(dim1, std::vector<std::vector<std::vector<T>>>(dim2, std::vector<std::vector<T>>(dim3, std::vector<T>(dim4, init_value))));
+}
 
 namespace nevod {
 
@@ -38,8 +60,6 @@ class DetectorConstruction : public G4VUserDetectorConstruction {
   void BuildOtherBuildings(G4LogicalVolume* world_log);
 
   // NEVOD
-  void BuildPMT();
-  void BuildQSM();
   void BuildCWD(G4LogicalVolume* water_log);
 
   // DECOR
@@ -55,7 +75,7 @@ class DetectorConstruction : public G4VUserDetectorConstruction {
   // NEVOD-EAS
   void BuildEAS();
 
-  Communicator* communicator_;
+  Communicator* communicator_ = nullptr;
 
   // option to activate checking of volumes overlaps
   G4bool check_overlaps_ = true;
@@ -75,18 +95,18 @@ class DetectorConstruction : public G4VUserDetectorConstruction {
   // SCT (2 for outer and inner)
   std::pair<G4int, G4int> sct_plane_number_;
   std::pair<G4int, G4int> sct_counter_number_;
-  std::vector<std::pair<G4Box*, G4Box*>> sct_counter_box_{};
-  std::vector<std::pair<G4LogicalVolume*, G4LogicalVolume*>> sct_counter_log_{};
-  std::vector<std::pair<G4VPhysicalVolume*, G4VPhysicalVolume*>> sct_counter_phys_{};
+  std::vector<std::pair<G4Box*, G4Box*>> sct_counter_box_;
+  std::vector<std::pair<G4LogicalVolume*, G4LogicalVolume*>> sct_counter_log_;
+  std::vector<std::pair<G4VPhysicalVolume*, G4VPhysicalVolume*>> sct_counter_phys_;
 
-  std::vector<G4Box*> sct_scint_box_{};
-  std::vector<G4LogicalVolume*> sct_scint_log_{};
-  std::vector<G4VPhysicalVolume*> sct_scint_phys_{};
+  std::vector<G4Box*> sct_scint_box_;
+  std::vector<G4LogicalVolume*> sct_scint_log_;
+  std::vector<G4VPhysicalVolume*> sct_scint_phys_;
 
   // DECOR (2 for X and Y stripes)
-  std::vector<std::vector<std::pair<G4Box*, G4Box*>>> super_module_box_;
-  std::vector<std::vector<std::pair<G4LogicalVolume*, G4LogicalVolume*>>> super_module_log_;
-  std::vector<std::vector<std::pair<G4VPhysicalVolume*, G4VPhysicalVolume*>>> super_module_phys_;
+  std::vector<std::vector<std::array<G4Box*, 2>>> super_module_box_;
+  std::vector<std::vector<std::array<G4LogicalVolume*, 2>>> super_module_log_;
+  std::vector<std::vector<std::array<G4VPhysicalVolume*, 2>>> super_module_phys_;
 
   // mu track detection in NEVOD
   std::vector<G4Box*> control_nevod_box_{BOX_SIDE_COUNT};

@@ -1,16 +1,5 @@
 #include "detector/DetectorConstruction.hh"
 
-// #include "G4Colour.hh"
-// #include "G4Element.hh"
-// #include "G4ElementTable.hh"
-// #include "G4Material.hh"
-// #include "G4NistManager.hh"
-// #include "G4OpBoundaryProcess.hh"
-// #include "G4SystemOfUnits.hh"
-// #include "G4Transform3D.hh"
-// #include "G4Tubs.hh"
-// #include "G4UserLimits.hh"
-
 namespace nevod {
 
 int dXY(int DS, int det, double& x, double& y);
@@ -72,7 +61,7 @@ DetectorConstruction::DetectorConstruction(Communicator* communicator): communic
   super_module_phys_.resize(DECOR_COUNT);
 
   for (auto& super_module: super_module_box_)
-    super_module_box_.resize(DECOR_CHAMBER_COUNT);
+    super_module.resize(DECOR_CHAMBER_COUNT);
   for (auto& super_module: super_module_log_)
     super_module.resize(DECOR_CHAMBER_COUNT);
   for (auto& super_module: super_module_phys_)
@@ -110,21 +99,21 @@ G4VPhysicalVolume* DetectorConstruction::Construct() {
   //============================================================================
 
   G4LogicalVolume* water_log = BuildNEVOD(world_log);
-  BuildOtherBuildings(world_log);
+  if (!construction_flags_.build_nevod_only) BuildOtherBuildings(world_log);
 
   //============================================================================
   // Detectors
   //============================================================================
 
   // TODO Rewrite PRISMA, URAN and EAS detectors
-  // BuildPRISMA();
-  // BuildURAN();
+  // if (construction_flags_.build_prisma) BuildPRISMA();
+  // if (construction_flags_.build_uran) BuildURAN();
 
-  BuildCWD(water_log);
-  BuildSCT(world_log, water_log);
-  BuildDECOR(world_log);
+  if (construction_flags_.build_cwd) BuildCWD(water_log);
+  if (construction_flags_.build_sct) BuildSCT(world_log, water_log);
+  if (construction_flags_.build_decor) BuildDECOR(world_log);
 
-  // BuildEAS();
+  // if (construction_flags_.build_eas) BuildEAS();
 
   return world_phys;
 }
@@ -156,10 +145,10 @@ void DetectorConstruction::GenerateMaterials() {
   //============================================================================
 
   // auto air = nist_manager->FindOrBuildMaterial("G4_AIR");
-  auto ferrum = nist_manager->FindOrBuildMaterial("G4_Fe");
-  auto steel = nist_manager->FindOrBuildMaterial("G4_STAINLESS-STEEL");
-  auto rock = nist_manager->FindOrBuildMaterial("G4_SILICON_DIOXIDE");
-  auto rubber = nist_manager->FindOrBuildMaterial("G4_RUBBER_NATURAL");
+  // auto ferrum = nist_manager->FindOrBuildMaterial("G4_Fe");
+  // auto steel = nist_manager->FindOrBuildMaterial("G4_STAINLESS-STEEL");
+  // auto rock = nist_manager->FindOrBuildMaterial("G4_SILICON_DIOXIDE");
+  // auto rubber = nist_manager->FindOrBuildMaterial("G4_RUBBER_NATURAL");
 
   // Air
   auto air = new G4Material("Air", 1.29 * mg / cm3, 2);
@@ -222,11 +211,11 @@ void DetectorConstruction::GenerateMaterials() {
   scintillator->AddElement(C, 8);
 
   // NEVOD-EAS
-  auto C9H10 = nist_manager->FindOrBuildMaterial("G4_PLASTIC_SC_VINYLTOLUENE");
+  // auto C9H10 = nist_manager->FindOrBuildMaterial("G4_PLASTIC_SC_VINYLTOLUENE");
 
   // PRISMA-URAN
-  auto barrel = nist_manager->FindOrBuildMaterial("G4_POLYETHYLENE");
-  auto floor_material = nist_manager->FindOrBuildMaterial("G4_CONCRETE");
+  // auto barrel = nist_manager->FindOrBuildMaterial("G4_POLYETHYLENE");
+  // auto floor_material = nist_manager->FindOrBuildMaterial("G4_CONCRETE");
   auto floor_material_2 = new G4Material("FloorMaterial", 0.9 * g / cm3, 3);
   floor_material_2->AddElement(H, 4);
   floor_material_2->AddElement(O, 1);
@@ -462,7 +451,7 @@ G4LogicalVolume* DetectorConstruction::BuildNEVOD(G4LogicalVolume* world_log) {
   // NEVOD muon tracks control
   //============================================================================
 
-  G4double control_nevod_size_x[6] = {
+  G4double control_nevod_size_x[BOX_SIDE_COUNT] = {
       (9. - 2. * 1.E-6) * m,
       1.E-6 * m,
       (9. - 2. * 1.E-6) * m,
@@ -470,7 +459,7 @@ G4LogicalVolume* DetectorConstruction::BuildNEVOD(G4LogicalVolume* world_log) {
       (9. - 2. * 1.E-6) * m,
       (9. - 2. * 1.E-6) * m,
   };
-  G4double control_nevod_size_y[6] = {
+  G4double control_nevod_size_y[BOX_SIDE_COUNT] = {
       1.E-6 * m,
       26. * m,
       1.E-6 * m,
@@ -478,7 +467,7 @@ G4LogicalVolume* DetectorConstruction::BuildNEVOD(G4LogicalVolume* world_log) {
       (26. - 2. * 1.E-6) * m,
       (26. - 2. * 1.E-6) * m,
   };
-  G4double control_nevod_size_z[6] = {
+  G4double control_nevod_size_z[BOX_SIDE_COUNT] = {
       8.5 * m,
       8.5 * m,
       8.5 * m,
@@ -486,7 +475,7 @@ G4LogicalVolume* DetectorConstruction::BuildNEVOD(G4LogicalVolume* world_log) {
       1.E-6 * m,
       1.E-6 * m,
   };
-  G4ThreeVector control_nevod_position[6] = {
+  G4ThreeVector control_nevod_position[BOX_SIDE_COUNT] = {
       G4ThreeVector(0, (13. - 1.E-6 / 2.) * m, -0.25 * m),
       G4ThreeVector((4.5 - 1.E-6 / 2.) * m, 0, -0.25 * m),
       G4ThreeVector(0, -(13. - 1.E-6 / 2.) * m, -0.25 * m),
@@ -495,7 +484,7 @@ G4LogicalVolume* DetectorConstruction::BuildNEVOD(G4LogicalVolume* world_log) {
       G4ThreeVector(0, 0, (-4.5 + 1.E-6 / 2.) * m),
   };
 
-  for (size_t i = 0; i < 6; ++i) {
+  for (size_t i = 0; i < BOX_SIDE_COUNT; ++i) {
     control_nevod_box_[i] = new G4Box("ControlNEVOD", control_nevod_size_x[i] / 2., control_nevod_size_y[i] / 2., control_nevod_size_z[i] / 2.);
     control_nevod_log_[i] = new G4LogicalVolume(control_nevod_box_[i], water, "ControlNEVOD");
 
@@ -861,8 +850,6 @@ void DetectorConstruction::BuildOtherBuildings(G4LogicalVolume* world_log) {
 }
 
 // NEVOD
-void DetectorConstruction::BuildPMT() {}
-void DetectorConstruction::BuildQSM() {}
 void DetectorConstruction::BuildCWD(G4LogicalVolume* water_log) {
   //============================================================================
   // Materials
@@ -913,23 +900,16 @@ void DetectorConstruction::BuildCWD(G4LogicalVolume* water_log) {
       new G4Tubs("Photocathode", inner_rad_photocathode, outer_rad_photocathode, height_photocathode, start_angle, spanning_angle);
 
   //============================================================================
-  // Get info about configuration
-  //============================================================================
-
-  auto config = communicator_->GetSimulationParams();
-  CherenkovConfig cherenkov_config = config.cherenkov_config;
-
-  //============================================================================
   // Buildings construction
   //============================================================================
 
-  G4int modules_per_stripe[QSM_STRIPE_COUNT] = {4, 3, 4, 3, 4, 3, 4};
+  std::vector<PMTId> id_qsm;
   G4int pmt_count = 0;
 
   G4double pos_x, pos_y, pos_z, distance;
   G4ThreeVector position, null_position(0.0 * mm, 0.0 * mm, 0.0 * mm);
 
-  G4int qsm_config[PMT_PER_QSM][3] = {
+  G4int tube_config[PMT_PER_QSM][3] = {
       {0, 1, 0},
       {1, 0, 0},
       {0, -1, 0},
@@ -949,149 +929,165 @@ void DetectorConstruction::BuildCWD(G4LogicalVolume* water_log) {
   rot_matrices[4]->rotateY(180.0 * deg);
   rot_matrices[5]->rotateX(0.0 * deg);
 
-  G4LogicalVolume* m_box_log[QSM_STRIPE_COUNT][4][4] = {nullptr};
-  G4LogicalVolume* m_box_a_log[QSM_STRIPE_COUNT][4][4] = {nullptr};
-  G4LogicalVolume* aluminium_tube_log[QSM_STRIPE_COUNT][4][4][PMT_PER_QSM] = {nullptr};
-  G4LogicalVolume* AirTube_l[QSM_STRIPE_COUNT][4][4][PMT_PER_QSM] = {nullptr};
-  G4LogicalVolume* Illum1_log[QSM_STRIPE_COUNT][4][4][PMT_PER_QSM] = {nullptr};
-  G4LogicalVolume* Illum2_log[QSM_STRIPE_COUNT][4][4][PMT_PER_QSM] = {nullptr};
-  G4LogicalVolume* Silic_log[QSM_STRIPE_COUNT][4][4][PMT_PER_QSM] = {nullptr};
-  G4LogicalVolume* Glass_log[QSM_STRIPE_COUNT][4][4][PMT_PER_QSM] = {nullptr};
-  G4LogicalVolume* Photokat_log[QSM_STRIPE_COUNT][4][4][PMT_PER_QSM] = {nullptr};
+  auto m_box_log = initVector3D<G4LogicalVolume*>(cwd_plane_number_, 4, 4);
+  auto m_box_a_log = initVector3D<G4LogicalVolume*>(cwd_plane_number_, 4, 4);
+  auto aluminium_tube_log = initVector4D<G4LogicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  auto air_tube_log = initVector4D<G4LogicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  auto illuminator_log = initVector4D<G4LogicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  auto silicone_log = initVector4D<G4LogicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  auto glass_log = initVector4D<G4LogicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  auto photocathode_log = initVector4D<G4LogicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
 
-  G4VPhysicalVolume* Mbox_phys[QSM_STRIPE_COUNT][4][4] = {nullptr};
-  G4VPhysicalVolume* MboxA_phys[QSM_STRIPE_COUNT][4][4] = {nullptr};
-  G4VPhysicalVolume* AlTube_phys[QSM_STRIPE_COUNT][4][4][PMT_PER_QSM] = {nullptr};
-  G4VPhysicalVolume* AirTube_phys[QSM_STRIPE_COUNT][4][4][PMT_PER_QSM] = {nullptr};
-  G4VPhysicalVolume* Illum1_phys[QSM_STRIPE_COUNT][4][4][PMT_PER_QSM] = {nullptr};
-  G4VPhysicalVolume* Illum2_phys[QSM_STRIPE_COUNT][4][4][PMT_PER_QSM] = {nullptr};
-  G4VPhysicalVolume* Silic_phys[QSM_STRIPE_COUNT][4][4][PMT_PER_QSM] = {nullptr};
-  G4VPhysicalVolume* Glass_phys[QSM_STRIPE_COUNT][4][4][PMT_PER_QSM] = {nullptr};
-  G4VPhysicalVolume* Photokat_phys[QSM_STRIPE_COUNT][4][4][PMT_PER_QSM] = {nullptr};
+  auto m_box_phys = initVector3D<G4VPhysicalVolume*>(cwd_plane_number_, 4, 4);
+  auto m_box_a_phys = initVector3D<G4VPhysicalVolume*>(cwd_plane_number_, 4, 4);
+  auto aluminium_tube_phys = initVector4D<G4VPhysicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  auto air_tube_phys = initVector4D<G4VPhysicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  auto illuminator_phys = initVector4D<G4VPhysicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  auto silicone_phys = initVector4D<G4VPhysicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  auto glass_phys = initVector4D<G4VPhysicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  auto photocathode_phys = initVector4D<G4VPhysicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
 
-  for (size_t plane = 0; plane < QSM_STRIPE_COUNT; plane++) {
-    for (size_t stripe = 0; stripe < modules_per_stripe[plane]; stripe++) {
-      for (size_t module = 0; module < modules_per_stripe[plane]; module++) {
-        pos_x = 0.0 * m;
-        pos_y = 0.0 * m;
-        pos_z = 0.0 * m;
-
+  for (size_t plane = 0; plane < cwd_plane_number_; plane++) {
+    for (size_t stripe = 0; stripe < stride_config_[plane]; stripe++) {
+      for (size_t module = 0; module < qsm_config_[plane]; module++) {
         if ((plane == 0) || (plane == 2) || (plane == 4) || (plane == 6)) {
-          // dla chetverok
+          // for fours
           pos_x = -3.0 + 2.0 * stripe * m;
           pos_z = 3.0 - 2.0 * module * m;
         } else {
-          // dla troek
+          // for threes
           pos_x = -2.0 + 2.0 * stripe * m;
           pos_z = 2.0 - 2.0 * module * m;
         }
         pos_y = -6.125 + 1.25 * plane * m;
         position = G4ThreeVector(pos_x, pos_y, pos_z);
 
-        Mbox_log[plane][stripe][module] = new G4LogicalVolume(m_box_tube, aluminium, "MBox");
+        m_box_log[plane][stripe][module] = new G4LogicalVolume(m_box_tube, aluminium, "MBox");
 
-        Mbox_phys[plane][stripe][module] =
-            new G4PVPlacement(nullptr, position, Mbox_log[plane][stripe][module], "MBox", water_log, false, 0, check_overlaps_);
+        m_box_phys[plane][stripe][module] =
+            new G4PVPlacement(nullptr, position, m_box_log[plane][stripe][module], "MBox", water_log, false, 0, check_overlaps_);
 
-        MboxA_log[plane][stripe][module] = new G4LogicalVolume(m_box_a_tube, air, "MBoxA");
+        m_box_a_log[plane][stripe][module] = new G4LogicalVolume(m_box_a_tube, air, "MBoxA");
 
-        MboxA_phys[plane][stripe][module] = new G4PVPlacement(
-            nullptr, null_position, MboxA_log[plane][stripe][module], "MBoxA", Mbox_log[plane][stripe][module], false, 0, check_overlaps_);
+        m_box_a_phys[plane][stripe][module] = new G4PVPlacement(
+            nullptr, null_position, m_box_a_log[plane][stripe][module], "MBoxA", m_box_log[plane][stripe][module], false, 0, check_overlaps_);
 
         for (G4int i = 0; i < PMT_PER_QSM; i++) {
           distance = (120. + 157. / 2.) * mm;
-          position = G4ThreeVector(distance * qsm_config[i][0] + pos_x, distance * qsm_config[i][1] + pos_y, distance * qsm_config[i][2] + pos_z);
-          AlTube_log[plane][stripe][module][i] = new G4LogicalVolume(aluminium_tube, aluminium, "Tube");
+          position = G4ThreeVector(distance * tube_config[i][0] + pos_x, distance * tube_config[i][1] + pos_y, distance * tube_config[i][2] + pos_z);
+          aluminium_tube_log[plane][stripe][module][i] = new G4LogicalVolume(aluminium_tube, aluminium, "Tube");
 
-          AlTube_phys[plane][stripe][module][i] =
-              new G4PVPlacement(rot_matrices[i], position, AlTube_log[plane][stripe][module][i], "Tube", water_log, false, 0, check_overlaps_);
+          aluminium_tube_phys[plane][stripe][module][i] = new G4PVPlacement(
+              rot_matrices[i], position, aluminium_tube_log[plane][stripe][module][i], "Tube", water_log, false, 0, check_overlaps_);
 
-          AirTube_l[plane][stripe][module][i] = new G4LogicalVolume(air_tube, air, "AirTube");
+          air_tube_log[plane][stripe][module][i] = new G4LogicalVolume(air_tube, air, "AirTube");
 
-          AirTube_phys[plane][stripe][module][i] = new G4PVPlacement(
+          air_tube_phys[plane][stripe][module][i] = new G4PVPlacement(
               nullptr,
               null_position,
-              AirTube_l[plane][stripe][module][i],
+              air_tube_log[plane][stripe][module][i],
               "AirTube",
-              AlTube_log[plane][stripe][module][i],
+              aluminium_tube_log[plane][stripe][module][i],
               false,
               0,
               check_overlaps_);
 
           distance = (120. + 157. + 8. / 2.) * mm;
-          position = G4ThreeVector(distance * qsm_config[i][0] + pos_x, distance * qsm_config[i][1] + pos_y, distance * qsm_config[i][2] + pos_z);
+          position = G4ThreeVector(distance * tube_config[i][0] + pos_x, distance * tube_config[i][1] + pos_y, distance * tube_config[i][2] + pos_z);
 
           position = G4ThreeVector(0. * m, 0. * m, (157. / 2. - 16. / 2.) * mm);
-          Illum2_log[plane][stripe][module][i] = new G4LogicalVolume(illuminator_tube, plexiglass, "Illuminator");
-          Illum2_phys[plane][stripe][module][i] = new G4PVPlacement(
-              nullptr, position, Illum2_log[plane][stripe][module][i], "Illuminator", AirTube_l[plane][stripe][module][i], false, 0, check_overlaps_);
+          illuminator_log[plane][stripe][module][i] = new G4LogicalVolume(illuminator_tube, plexiglass, "Illuminator");
+          illuminator_phys[plane][stripe][module][i] = new G4PVPlacement(
+              nullptr,
+              position,
+              illuminator_log[plane][stripe][module][i],
+              "Illuminator",
+              air_tube_log[plane][stripe][module][i],
+              false,
+              0,
+              check_overlaps_);
 
-          Silic_log[plane][stripe][module][i] = new G4LogicalVolume(silicone_tube, silicone, "Silicone");
+          silicone_log[plane][stripe][module][i] = new G4LogicalVolume(silicone_tube, silicone, "Silicone");
 
-          Silic_phys[plane][stripe][module][i] = new G4PVPlacement(
+          silicone_phys[plane][stripe][module][i] = new G4PVPlacement(
               nullptr,
               G4ThreeVector(0. * mm, 0. * mm, (157. / 2. - 16. - 3. / 2.) * mm),
-              Silic_log[plane][stripe][module][i],
+              silicone_log[plane][stripe][module][i],
               "Silicone",
-              AirTube_l[plane][stripe][module][i],
+              air_tube_log[plane][stripe][module][i],
               false,
               0,
               check_overlaps_);
 
-          Glass_log[plane][stripe][module][i] = new G4LogicalVolume(glass_tube, glass, "Glass");
+          glass_log[plane][stripe][module][i] = new G4LogicalVolume(glass_tube, glass, "Glass");
 
-          Glass_phys[plane][stripe][module][i] = new G4PVPlacement(
+          glass_phys[plane][stripe][module][i] = new G4PVPlacement(
               nullptr,
               G4ThreeVector(0. * mm, 0. * mm, (157. / 2. - 16. - 3. - 6. / 2.) * mm),
-              Glass_log[plane][stripe][module][i],
+              glass_log[plane][stripe][module][i],
               "Glass",
-              AirTube_l[plane][stripe][module][i],
+              air_tube_log[plane][stripe][module][i],
               false,
               0,
               check_overlaps_);
 
-          Photokat_log[plane][stripe][module][i] = new G4LogicalVolume(photocathode_tube, aluminium, "Photocathode");
+          photocathode_log[plane][stripe][module][i] = new G4LogicalVolume(photocathode_tube, aluminium, "Photocathode");
 
-          Photokat_phys[plane][stripe][module][i] = new G4PVPlacement(
+          photocathode_phys[plane][stripe][module][i] = new G4PVPlacement(
               nullptr,
               G4ThreeVector(0. * mm, 0. * mm, (157. / 2. - 16. - 3. - 6. - 0.1 / 2.) * mm),
 
-              Photokat_log[plane][stripe][module][i],
+              photocathode_log[plane][stripe][module][i],
               "Photocathode",
-              AirTube_l[plane][stripe][module][i],
+              air_tube_log[plane][stripe][module][i],
               false,
               pmt_count,
               check_overlaps_);
 
-          perevKM[pmt_count][0] = plane;
-          perevKM[pmt_count][1] = stripe;
-          perevKM[pmt_count][2] = module;
-          perevKM[pmt_count][3] = i;
+          id_qsm[pmt_count].plane = plane;
+          id_qsm[pmt_count].stripe = stripe;
+          id_qsm[pmt_count].module = module;
+          id_qsm[pmt_count].tube = i;
 
           pmt_count++;
         }
       }
     }
   }
-  feuCount = pmt_count;
 
-  G4OpticalSurface *OpPlGlassTubeSurf, *OpPlGlassWaterSurf;
+  //============================================================================
+  // Sending configuration to Communicator
+  //============================================================================
 
-  OpPlGlassTubeSurf = new G4OpticalSurface("OpPlGlassTubeSurf");
-  OpPlGlassTubeSurf->SetType(dielectric_metal);
-  OpPlGlassTubeSurf->SetFinish(polished);
-  OpPlGlassTubeSurf->SetModel(unified);
+  communicator_->SetCountPMT(pmt_count);
+  communicator_->SetQSMId(id_qsm);
 
-  G4LogicalBorderSurface *PlGlassTubeSurf[7][4][4][6] = {nullptr}, *PlGlassWaterSurf[7][4][4][6] = {nullptr},
-                         *PlGlassGlassSurf[7][4][4][6] = {nullptr}, *GlassTubeSurf[7][4][4][6] = {nullptr}, *GlassFeuSurf[7][4][4][6] = {nullptr},
-                         *WaterTubeSurf[7][4][4][6] = {nullptr}, *WaterMBoxSurf[7][4][4] = {nullptr};
+  //============================================================================
+  // Optical surfaces
+  //============================================================================
 
-  for (size_t plane = 0; plane < QSM_STRIPE_COUNT; plane++) {
-    for (size_t stripe = 0; stripe < modules_per_stripe[plane]; stripe++) {
-      for (size_t module = 0; module < modules_per_stripe[plane]; module++) {
+  G4OpticalSurface* optical_plexiglass_tube_surface;
+  // G4OpticalSurface* optical_plexiglass_water_surface;
+
+  optical_plexiglass_tube_surface = new G4OpticalSurface("OpPlGlassTubeSurf");
+  optical_plexiglass_tube_surface->SetType(dielectric_metal);
+  optical_plexiglass_tube_surface->SetFinish(polished);
+  optical_plexiglass_tube_surface->SetModel(unified);
+
+  auto glass_pmt_surface = initVector4D<G4LogicalBorderSurface*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  // auto plexiglass_tube_surface = initVector4D<G4LogicalBorderSurface*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  // auto plexiglass_water_surface = initVector4D<G4LogicalBorderSurface*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  // auto plexiglass_glass_surface = initVector4D<G4LogicalBorderSurface*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  // auto glass_tube_surface = initVector4D<G4LogicalBorderSurface*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  // auto water_tube_surface = initVector4D<G4LogicalBorderSurface*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  // auto water_m_box_surface = initVector4D<G4LogicalBorderSurface*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+
+  for (size_t plane = 0; plane < cwd_plane_number_; plane++) {
+    for (size_t stripe = 0; stripe < stride_config_[plane]; stripe++) {
+      for (size_t module = 0; module < qsm_config_[plane]; module++) {
         for (size_t i = 0; i < PMT_PER_QSM; i++) {
-          GlassFeuSurf[plane][stripe][module][i] = new G4LogicalBorderSurface(
-              "GlassFeuSurf", Glass_phys[plane][stripe][module][i], Photokat_phys[plane][stripe][module][i], OpPlGlassTubeSurf);
+          glass_pmt_surface[plane][stripe][module][i] = new G4LogicalBorderSurface(
+              "GlassPMTSurface", glass_phys[plane][stripe][module][i], photocathode_phys[plane][stripe][module][i], optical_plexiglass_tube_surface);
         }
       }
     }
@@ -1110,31 +1106,6 @@ void DetectorConstruction::BuildDECOR(G4LogicalVolume* world_log) {
   //============================================================================
   // DECOR construction
   //============================================================================
-
-  G4double shSMSizeX[2];
-  shSMSizeX[0] = 3430 * mm;
-  shSMSizeX[1] = 3120 * mm;
-  G4double shSMSizeZ = 2708 * mm;
-  G4double shSMSizeY = 1 * nm;
-
-  G4double lgSMSizeY[2];
-  lgSMSizeY[0] = 3430 * mm;
-  lgSMSizeY[1] = 3120 * mm;
-  G4double lgSMSizeZ = 2708 * mm;
-  G4double lgSMSizeX = 1 * nm;
-
-  G4double SM0PosX, SM0PosY, SM0PosZ;
-  G4double SM1PosX, SM1PosY, SM1PosZ;
-  G4double SM2PosX, SM2PosY, SM2PosZ;
-  G4double SM3PosX, SM3PosY, SM3PosZ;
-  G4double SM4PosX, SM4PosY, SM4PosZ;
-  G4double SM5PosX, SM5PosY, SM5PosZ;
-  G4double SM6PosX, SM6PosY, SM6PosZ;
-  G4double SM7PosX, SM7PosY, SM7PosZ;
-  G4double xSM0PosY1, xSM1PosY1, xSM6PosY1, xSM7PosY1;
-  G4double xSM2PosX1, xSM3PosX1, xSM4PosX1, xSM5PosX1;
-  G4double ySM0PosY1, ySM1PosY1, ySM6PosY1, ySM7PosY1;
-  G4double ySM2PosX1, ySM3PosX1, ySM4PosX1, ySM5PosX1;
 
   G4double short_sm_size_x[2] = {3430 * mm, 3120 * mm};
   G4double short_sm_size_y = 1 * nm;
@@ -1264,9 +1235,12 @@ void DetectorConstruction::BuildSCT(G4LogicalVolume* world_log, G4LogicalVolume*
 
   G4int middle_id = (sct_plane_number_.first * sct_counter_number_.first + sct_plane_number_.second * sct_counter_number_.first);
   G4int counter_per_iter = sct_counter_number_.first + sct_counter_number_.second;
-  G4int counter_id;
+
   G4int additional_counter_id;
   G4double counter_pos_z;
+
+  G4int counter_id;
+  std::vector<CounterId> id_sct;
 
   G4ThreeVector null_vector(0.0 * m, 0.0 * m, 0.0 * m);
 
@@ -1280,9 +1254,9 @@ void DetectorConstruction::BuildSCT(G4LogicalVolume* world_log, G4LogicalVolume*
       counter_pos_z = counter_pos_z_down;
     }
 
-    for (int j = 0; j < sct_plane_number_.first; j++) {
+    for (size_t j = 0; j < sct_plane_number_.first; j++) {
       counter_id = counter_per_iter * j + additional_counter_id;
-      for (int i = 0; i < sct_counter_number_.first; i++) {
+      for (size_t i = 0; i < sct_counter_number_.first; i++) {
         counter_pos_x = (-4.5 + 1.5 + 2. * i) * m;
         counter_pos_y = (-13.0 + 5.625 + 2.5 * j) * m;
 
@@ -1323,12 +1297,16 @@ void DetectorConstruction::BuildSCT(G4LogicalVolume* world_log, G4LogicalVolume*
             counter_id,
             check_overlaps_);
 
+        id_sct[counter_id].side = side_count;
+        id_sct[counter_id].plane = j;
+        id_sct[counter_id].row = i;
+
         counter_id++;
       }
 
-      for (int j = 0; j < sct_plane_number_.second; j++) {
+      for (size_t j = 0; j < sct_plane_number_.second; j++) {
         counter_id = sct_counter_number_.first + counter_per_iter * j + additional_counter_id;
-        for (int i = 0; i < sct_counter_number_.second; i++) {
+        for (size_t i = 0; i < sct_counter_number_.second; i++) {
           counter_pos_x = (-4.5 + 0.5 + 2. * i) * m;
           counter_pos_y = (-13.0 + 6.875 + 2.5 * j) * m;
 
@@ -1369,11 +1347,22 @@ void DetectorConstruction::BuildSCT(G4LogicalVolume* world_log, G4LogicalVolume*
               counter_id,
               check_overlaps_);
 
+          id_sct[counter_id].side = side_count;
+          id_sct[counter_id].plane = j;
+          id_sct[counter_id].row = i;
+
           counter_id++;
         }
       }
     }
   }
+
+  //============================================================================
+  // Sending configuration to Communicator
+  //============================================================================
+
+  communicator_->SetCountSCT(counter_id);
+  communicator_->SetCounterId(id_sct);
 }
 
 // PRISMA-URAN
