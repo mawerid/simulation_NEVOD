@@ -37,6 +37,12 @@ DetectorConstruction::DetectorConstruction(Communicator* communicator): communic
       break;
   }
 
+  air_tube_log_ = init_vector4d<G4LogicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  air_tube_phys_ = init_vector4d<G4VPhysicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+
+  photocathode_log_ = init_vector4d<G4LogicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  photocathode_phys_ = init_vector4d<G4VPhysicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+
   switch (params.config_sct) {
     case SCTConfig::OLD_CONFIGURATION:
       sct_plane_number_ = {5, 4};
@@ -86,20 +92,20 @@ G4VPhysicalVolume* DetectorConstruction::Construct() {
   // Experimental hall
   //============================================================================
 
-  auto world_box = new G4Box("World", experimental_hall_x_, experimental_hall_y_, experimental_hall_z_);
-  auto world_log = new G4LogicalVolume(world_box, air, "World");
+  auto world_box_ = new G4Box("World", experimental_hall_x_, experimental_hall_y_, experimental_hall_z_);
+  auto world_log_ = new G4LogicalVolume(world_box_, air, "World");
 
-  G4VPhysicalVolume* world_phys = new G4PVPlacement(nullptr, G4ThreeVector(), world_log, "World", nullptr, false, 0);
+  G4VPhysicalVolume* world_phys_ = new G4PVPlacement(nullptr, G4ThreeVector(), world_log_, "World", nullptr, false, 0);
 
   // Set visibility for experimental hall
-  world_log->SetVisAttributes(G4VisAttributes::GetInvisible());
+  world_log_->SetVisAttributes(G4VisAttributes::GetInvisible());
 
   //============================================================================
   // Buildings
   //============================================================================
 
-  G4LogicalVolume* water_log = BuildNEVOD(world_log);
-  if (!construction_flags_.build_nevod_only) BuildOtherBuildings(world_log);
+  BuildNEVOD();
+  if (!construction_flags_.build_nevod_only) BuildOtherBuildings();
 
   //============================================================================
   // Detectors
@@ -109,16 +115,74 @@ G4VPhysicalVolume* DetectorConstruction::Construct() {
   // if (construction_flags_.build_prisma) BuildPRISMA();
   // if (construction_flags_.build_uran) BuildURAN();
 
-  if (construction_flags_.build_cwd) BuildCWD(water_log);
-  if (construction_flags_.build_sct) BuildSCT(world_log, water_log);
-  if (construction_flags_.build_decor) BuildDECOR(world_log);
+  if (construction_flags_.build_cwd) BuildCWD();
+  if (construction_flags_.build_sct) BuildSCT();
+  if (construction_flags_.build_decor) BuildDECOR();
 
   // if (construction_flags_.build_eas) BuildEAS();
 
-  return world_phys;
+  return world_phys_;
 }
 
-void DetectorConstruction::ConstructSDandField() {}
+void DetectorConstruction::ConstructSDandField() {
+  auto sd_manager = G4SDManager::GetSDMpointer();
+
+  //============================================================================
+  // mu track detection in NEVOD
+  //============================================================================
+
+  auto control_nevod_sd = new NEVODSensetiveDetector("ControlNEVOD", communicator_);
+  sd_manager->AddNewDetector(control_nevod_sd);
+
+  for (size_t i = 0; i < BOX_SIDE_COUNT; ++i)
+    control_nevod_log_[i]->SetSensitiveDetector(control_nevod_sd);
+
+  //============================================================================
+  // Water (for energy deposition)
+  //============================================================================
+
+  auto water_sd = new WaterSensetiveDetector("Water", communicator_);
+  sd_manager->AddNewDetector(water_sd);
+  water_log_->SetSensitiveDetector(water_sd);
+
+  //============================================================================
+  // CherenkovWD
+  //============================================================================
+
+  auto airtube_sd = new AirtubeSensetiveDetector("Airtube", communicator_);
+  auto photocathode_sd = new PhotocathodeSensetiveDetector("Photocathode", communicator_);
+  sd_manager->AddNewDetector(airtube_sd);
+  sd_manager->AddNewDetector(photocathode_sd);
+
+  for (size_t i = 0; i < cwd_plane_number_; ++i)
+    for (size_t j = 0; j < qsm_config_[i]; ++j)
+      for (size_t k = 0; k < stride_config_[i]; ++k)
+        for (size_t l = 0; l < PMT_PER_QSM; ++l) {
+          air_tube_log_[i][j][k][l]->SetSensitiveDetector(airtube_sd);
+          photocathode_log_[i][j][k][l]->SetSensitiveDetector(photocathode_sd);
+        }
+
+  //============================================================================
+  // SCT
+  //============================================================================
+
+  auto sct_counter_sd = new SCTSensetiveDetector("SCTCounter", communicator_);
+  sd_manager->AddNewDetector(sct_counter_sd);
+
+  for (size_t i = 0; i < sct_counter_box_.size(); ++i)
+    sct_counter_log_[i].first->SetSensitiveDetector(sct_counter_sd);
+
+  //============================================================================
+  // DECOR
+  //============================================================================
+
+  auto decor_sd = new DECORSensetiveDetector("DECOR", communicator_);
+  sd_manager->AddNewDetector(decor_sd);
+  for (size_t i = 0; i < DECOR_COUNT; ++i)
+    for (size_t j = 0; j < DECOR_CHAMBER_COUNT; ++j)
+      for (size_t k = 0; k < 2; ++k)
+        super_module_log_[i][j][k]->SetSensitiveDetector(decor_sd);
+}
 
 void DetectorConstruction::GenerateMaterials() {
   G4NistManager* nist_manager = G4NistManager::Instance();
@@ -328,7 +392,7 @@ void DetectorConstruction::GenerateMaterials() {
   air->SetMaterialPropertiesTable(mat_prop_table_air);
 }
 
-G4LogicalVolume* DetectorConstruction::BuildNEVOD(G4LogicalVolume* world_log) {
+void DetectorConstruction::BuildNEVOD() {
   //============================================================================
   // Materials
   //============================================================================
@@ -355,11 +419,11 @@ G4LogicalVolume* DetectorConstruction::BuildNEVOD(G4LogicalVolume* world_log) {
   auto roof_claydite_box = new G4Box("RoofClaydite", roof_x, roof_y, claydite_roof_z);
   auto roof_claydite_log = new G4LogicalVolume(roof_claydite_box, claydite, "RoofClaydite");
   G4VPhysicalVolume* roof_claydite_phys =
-      new G4PVPlacement(nullptr, claydite_roof_pos, roof_claydite_log, "RoofClaydite", world_log, false, 0, check_overlaps_);
+      new G4PVPlacement(nullptr, claydite_roof_pos, roof_claydite_log, "RoofClaydite", world_log_, false, 0, check_overlaps_);
 
   auto roof_brick_box = new G4Box("RoofBrick", roof_x, roof_y, brick_roof_z);
   auto roof_brick_log = new G4LogicalVolume(roof_brick_box, brick, "RoofBrick");
-  G4VPhysicalVolume* roof_brick_phys = new G4PVPlacement(nullptr, brick_roof_pos, roof_brick_log, "RoofBrick", world_log, false, 0, check_overlaps_);
+  G4VPhysicalVolume* roof_brick_phys = new G4PVPlacement(nullptr, brick_roof_pos, roof_brick_log, "RoofBrick", world_log_, false, 0, check_overlaps_);
 
   //============================================================================
   // Walls
@@ -379,13 +443,13 @@ G4LogicalVolume* DetectorConstruction::BuildNEVOD(G4LogicalVolume* world_log) {
 
   auto wall_y_box = new G4Box("Walls", wall_y_x, wall_y_y, wall_y_z);
   auto wall_y_log = new G4LogicalVolume(wall_y_box, concrete, "Walls");
-  G4VPhysicalVolume* wall_y_min_phys = new G4PVPlacement(nullptr, wall_y_pos_min, wall_y_log, "Walls", world_log, false, 0, check_overlaps_);
-  G4VPhysicalVolume* wall_y_max_phys = new G4PVPlacement(nullptr, wall_y_pos_max, wall_y_log, "Walls", world_log, false, 0, check_overlaps_);
+  G4VPhysicalVolume* wall_y_min_phys = new G4PVPlacement(nullptr, wall_y_pos_min, wall_y_log, "Walls", world_log_, false, 0, check_overlaps_);
+  G4VPhysicalVolume* wall_y_max_phys = new G4PVPlacement(nullptr, wall_y_pos_max, wall_y_log, "Walls", world_log_, false, 0, check_overlaps_);
 
   auto wall_x_box = new G4Box("Walls", wall_x_x, wall_x_y, wall_x_z);
   auto wall_x_log = new G4LogicalVolume(wall_x_box, concrete, "Walls");
-  G4VPhysicalVolume* wall_x_min_phys = new G4PVPlacement(nullptr, wall_x_pos_min, wall_x_log, "Walls", world_log, false, 0, check_overlaps_);
-  G4VPhysicalVolume* wall_x_max_phys = new G4PVPlacement(nullptr, wall_x_pos_max, wall_x_log, "Walls", world_log, false, 0, check_overlaps_);
+  G4VPhysicalVolume* wall_x_min_phys = new G4PVPlacement(nullptr, wall_x_pos_min, wall_x_log, "Walls", world_log_, false, 0, check_overlaps_);
+  G4VPhysicalVolume* wall_x_max_phys = new G4PVPlacement(nullptr, wall_x_pos_max, wall_x_log, "Walls", world_log_, false, 0, check_overlaps_);
 
   //============================================================================
   // The concrete pool
@@ -400,11 +464,11 @@ G4LogicalVolume* DetectorConstruction::BuildNEVOD(G4LogicalVolume* world_log) {
 
   auto pool_box = new G4Box("Pool", pool_x, pool_y, pool_z);
   auto pool_log = new G4LogicalVolume(pool_box, concrete, "Pool");
-  G4VPhysicalVolume* pool_phys = new G4PVPlacement(nullptr, pool_pos, pool_log, "Pool", world_log, false, 0, check_overlaps_);
+  G4VPhysicalVolume* pool_phys = new G4PVPlacement(nullptr, pool_pos, pool_log, "Pool", world_log_, false, 0, check_overlaps_);
 
   auto pool_cap_box = new G4Box("PoolCap", pool_x, pool_y, pool_cap_z);
   auto pool_cap_log = new G4LogicalVolume(pool_cap_box, ferrum, "PoolCap");
-  G4VPhysicalVolume* pool_cap_phys = new G4PVPlacement(nullptr, pool_cap_pos, pool_cap_log, "PoolCap", world_log, false, 0, check_overlaps_);
+  G4VPhysicalVolume* pool_cap_phys = new G4PVPlacement(nullptr, pool_cap_pos, pool_cap_log, "PoolCap", world_log_, false, 0, check_overlaps_);
 
   //============================================================================
   // The water box
@@ -416,12 +480,12 @@ G4LogicalVolume* DetectorConstruction::BuildNEVOD(G4LogicalVolume* world_log) {
   G4double water_z = (pool_z - h_walls) / 2;
   G4ThreeVector water_pos = G4ThreeVector(0 * m, 0 * m, h_walls / 2);
 
-  auto water_box = new G4Box("WaterBox", water_x, water_y, water_z);
-  auto water_log = new G4LogicalVolume(water_box, water, "WaterBox");
-  G4VPhysicalVolume* water_phys = new G4PVPlacement(nullptr, water_pos, water_log, "WaterBox", pool_log, false, 0, check_overlaps_);
+  auto water_box_ = new G4Box("WaterBox", water_x, water_y, water_z);
+  auto water_log_ = new G4LogicalVolume(water_box_, water, "WaterBox");
+  G4VPhysicalVolume* water_phys_ = new G4PVPlacement(nullptr, water_pos, water_log_, "WaterBox", pool_log, false, 0, check_overlaps_);
 
   auto optical_surface = new G4OpticalSurface("PoolSurface");
-  auto surface = new G4LogicalSkinSurface("BasseinSurface", water_log, optical_surface);
+  auto surface = new G4LogicalSkinSurface("BasseinSurface", water_log_, optical_surface);
   optical_surface->SetType(dielectric_dielectric);
   optical_surface->SetModel(unified);
   optical_surface->SetFinish(groundfrontpainted);
@@ -445,7 +509,7 @@ G4LogicalVolume* DetectorConstruction::BuildNEVOD(G4LogicalVolume* world_log) {
 
   auto air_box = new G4Box("AirBox", air_x / 2. * m, air_y / 2. * m, air_z / 2. * m);
   auto air_log = new G4LogicalVolume(air_box, air, "AirBox");
-  G4VPhysicalVolume* air_phys = new G4PVPlacement(nullptr, air_pos, air_log, "AirBox", water_log, false, 0, check_overlaps_);
+  G4VPhysicalVolume* air_phys = new G4PVPlacement(nullptr, air_pos, air_log, "AirBox", water_log_, false, 0, check_overlaps_);
 
   //============================================================================
   // NEVOD muon tracks control
@@ -489,7 +553,7 @@ G4LogicalVolume* DetectorConstruction::BuildNEVOD(G4LogicalVolume* world_log) {
     control_nevod_log_[i] = new G4LogicalVolume(control_nevod_box_[i], water, "ControlNEVOD");
 
     control_nevod_phys_[i] =
-        new G4PVPlacement(nullptr, control_nevod_position[i], control_nevod_log_[i], "ControlNEVOD", water_log, false, i, check_overlaps_);
+        new G4PVPlacement(nullptr, control_nevod_position[i], control_nevod_log_[i], "ControlNEVOD", water_log_, false, i, check_overlaps_);
   }
 
   //============================================================================
@@ -529,7 +593,7 @@ G4LogicalVolume* DetectorConstruction::BuildNEVOD(G4LogicalVolume* world_log) {
   auto watVisAtt = new G4VisAttributes(blue);
   watVisAtt->SetVisibility(true);
   watVisAtt->SetForceWireframe(true);
-  water_log->SetVisAttributes(G4VisAttributes::GetInvisible());
+  water_log_->SetVisAttributes(G4VisAttributes::GetInvisible());
 
   auto airVisAtt = new G4VisAttributes(cyan);
   airVisAtt->SetVisibility(true);
@@ -538,11 +602,9 @@ G4LogicalVolume* DetectorConstruction::BuildNEVOD(G4LogicalVolume* world_log) {
 
   for (size_t i = 0; i < 6; ++i)
     control_nevod_log_[i]->SetVisAttributes(G4VisAttributes::GetInvisible());
-
-  return water_log;
 }
 
-void DetectorConstruction::BuildOtherBuildings(G4LogicalVolume* world_log) {
+void DetectorConstruction::BuildOtherBuildings() {
   //============================================================================
   // Materials
   //============================================================================
@@ -569,7 +631,7 @@ void DetectorConstruction::BuildOtherBuildings(G4LogicalVolume* world_log) {
   auto boxBuild47 = new G4Box("boxBuild47", Build47sizeX / 2. * m, Build47sizeY / 2. * m, Build47sizeZ / 2. * m);
   auto logBuild47 = new G4LogicalVolume(boxBuild47, concrete, "logBuild47");
   G4VPhysicalVolume* physBuild47 = new G4PVPlacement(
-      nullptr, G4ThreeVector(Build47posX * m, Build47posY * m, Build47posZ * m), logBuild47, "physBuild47", world_log, false, 0, check_overlaps_);
+      nullptr, G4ThreeVector(Build47posX * m, Build47posY * m, Build47posZ * m), logBuild47, "physBuild47", world_log_, false, 0, check_overlaps_);
 
   auto boxBuildAir47 = new G4Box("boxBuildAir47", (Build47sizeX - 1.) / 2. * m, (Build47sizeY - 1.) / 2. * m, (Build47sizeZ - 1.) / 2. * m);
   auto logBuildAir47 = new G4LogicalVolume(boxBuildAir47, air, "logBuildAir47");
@@ -588,7 +650,7 @@ void DetectorConstruction::BuildOtherBuildings(G4LogicalVolume* world_log) {
   auto boxBuild31 = new G4Box("boxBuild31", Build31sizeX / 2. * m, Build31sizeY / 2. * m, Build31sizeZ / 2. * m);
   auto logBuild31 = new G4LogicalVolume(boxBuild31, concrete, "logBuild31");
   G4VPhysicalVolume* physBuild31 = new G4PVPlacement(
-      nullptr, G4ThreeVector(Build31posX * m, Build31posY * m, Build31posZ * m), logBuild31, "physBuild31", world_log, false, 0, check_overlaps_);
+      nullptr, G4ThreeVector(Build31posX * m, Build31posY * m, Build31posZ * m), logBuild31, "physBuild31", world_log_, false, 0, check_overlaps_);
 
   auto boxBuildAir31 = new G4Box("boxBuildAir31", (Build31sizeX - 1.) / 2. * m, (Build31sizeY - 1.) / 2. * m, (Build31sizeZ - 1.) / 2. * m);
   auto logBuildAir31 = new G4LogicalVolume(boxBuildAir31, air, "logBuildAir31");
@@ -611,7 +673,7 @@ void DetectorConstruction::BuildOtherBuildings(G4LogicalVolume* world_log) {
       G4ThreeVector(Build32lposX * m, Build32lposY * m, Build32lposZ * m),
       logBuild32l,
       "physBuild32l",
-      world_log,
+      world_log_,
       false,
       0,
       check_overlaps_);
@@ -637,7 +699,7 @@ void DetectorConstruction::BuildOtherBuildings(G4LogicalVolume* world_log) {
       G4ThreeVector(Build32hposX * m, Build32hposY * m, Build32hposZ * m),
       logBuild32h,
       "physBuild32h",
-      world_log,
+      world_log_,
       false,
       0,
       check_overlaps_);
@@ -659,7 +721,7 @@ void DetectorConstruction::BuildOtherBuildings(G4LogicalVolume* world_log) {
   auto boxBuild33 = new G4Box("boxBuild33", Build33sizeX / 2. * m, Build33sizeY / 2. * m, Build33sizeZ / 2. * m);
   auto logBuild33 = new G4LogicalVolume(boxBuild33, concrete, "logBuild33");
   G4VPhysicalVolume* physBuild33 = new G4PVPlacement(
-      nullptr, G4ThreeVector(Build33posX * m, Build33posY * m, Build33posZ * m), logBuild33, "physBuild33", world_log, false, 0, check_overlaps_);
+      nullptr, G4ThreeVector(Build33posX * m, Build33posY * m, Build33posZ * m), logBuild33, "physBuild33", world_log_, false, 0, check_overlaps_);
 
   auto boxBuildAir33 = new G4Box("boxBuildAir33", (Build33sizeX - 1.) / 2. * m, (Build33sizeY - 1.) / 2. * m, (Build33sizeZ - 1.) / 2. * m);
   auto logBuildAir33 = new G4LogicalVolume(boxBuildAir33, air, "logBuildAir33");
@@ -678,7 +740,7 @@ void DetectorConstruction::BuildOtherBuildings(G4LogicalVolume* world_log) {
   auto boxBuild6 = new G4Box("boxBuild6", Build6sizeX / 2. * m, Build6sizeY / 2. * m, Build6sizeZ / 2. * m);
   auto logBuild6 = new G4LogicalVolume(boxBuild6, concrete, "logBuild6");
   G4VPhysicalVolume* physBuild6 = new G4PVPlacement(
-      nullptr, G4ThreeVector(Build6posX * m, Build6posY * m, Build6posZ * m), logBuild6, "physBuild6", world_log, false, 0, check_overlaps_);
+      nullptr, G4ThreeVector(Build6posX * m, Build6posY * m, Build6posZ * m), logBuild6, "physBuild6", world_log_, false, 0, check_overlaps_);
 
   auto boxBuildAir6 = new G4Box("boxBuildAir6", (Build6sizeX - 1.) / 2. * m, (Build6sizeY - 1.) / 2. * m, (Build6sizeZ - 1.) / 2. * m);
   auto logBuildAir6 = new G4LogicalVolume(boxBuildAir6, air, "logBuildAir6");
@@ -697,7 +759,7 @@ void DetectorConstruction::BuildOtherBuildings(G4LogicalVolume* world_log) {
   auto boxBuild6a = new G4Box("boxBuild6a", Build6asizeX / 2. * m, Build6asizeY / 2. * m, Build6asizeZ / 2. * m);
   auto logBuild6a = new G4LogicalVolume(boxBuild6a, concrete, "logBuild6a");
   G4VPhysicalVolume* physBuild6a = new G4PVPlacement(
-      nullptr, G4ThreeVector(Build6aposX * m, Build6aposY * m, Build6aposZ * m), logBuild6a, "physBuild6a", world_log, false, 0, check_overlaps_);
+      nullptr, G4ThreeVector(Build6aposX * m, Build6aposY * m, Build6aposZ * m), logBuild6a, "physBuild6a", world_log_, false, 0, check_overlaps_);
 
   auto boxBuildAir6a = new G4Box("boxBuildAir6a", (Build6asizeX - 1.) / 2. * m, (Build6asizeY - 1.) / 2. * m, (Build6asizeZ - 1.) / 2. * m);
   auto logBuildAir6a = new G4LogicalVolume(boxBuildAir6a, air, "logBuildAir6a");
@@ -716,7 +778,7 @@ void DetectorConstruction::BuildOtherBuildings(G4LogicalVolume* world_log) {
   auto boxBuild7 = new G4Box("boxBuild7", Build7sizeX / 2. * m, Build7sizeY / 2. * m, Build7sizeZ / 2. * m);
   auto logBuild7 = new G4LogicalVolume(boxBuild7, concrete, "logBuild7");
   G4VPhysicalVolume* physBuild7 = new G4PVPlacement(
-      nullptr, G4ThreeVector(Build7posX * m, Build7posY * m, Build7posZ * m), logBuild7, "physBuild7", world_log, false, 0, check_overlaps_);
+      nullptr, G4ThreeVector(Build7posX * m, Build7posY * m, Build7posZ * m), logBuild7, "physBuild7", world_log_, false, 0, check_overlaps_);
 
   auto boxBuildAir7 = new G4Box("boxBuildAir7", (Build7sizeX - 1.) / 2. * m, (Build7sizeY - 1.) / 2. * m, (Build7sizeZ - 1.) / 2. * m);
   auto logBuildAir7 = new G4LogicalVolume(boxBuildAir7, air, "logBuildAir7");
@@ -735,7 +797,7 @@ void DetectorConstruction::BuildOtherBuildings(G4LogicalVolume* world_log) {
   auto boxBuild9 = new G4Box("boxBuild9", Build9sizeX / 2. * m, Build9sizeY / 2. * m, Build9sizeZ / 2. * m);
   auto logBuild9 = new G4LogicalVolume(boxBuild9, concrete, "logBuild9");
   G4VPhysicalVolume* physBuild9 = new G4PVPlacement(
-      nullptr, G4ThreeVector(Build9posX * m, Build9posY * m, Build9posZ * m), logBuild9, "physBuild9", world_log, false, 0, check_overlaps_);
+      nullptr, G4ThreeVector(Build9posX * m, Build9posY * m, Build9posZ * m), logBuild9, "physBuild9", world_log_, false, 0, check_overlaps_);
 
   auto boxBuildAir9 = new G4Box("boxBuildAir9", (Build9sizeX - 1.) / 2. * m, (Build9sizeY - 1.) / 2. * m, (Build9sizeZ - 1.) / 2. * m);
   auto logBuildAir9 = new G4LogicalVolume(boxBuildAir9, air, "logBuildAir9");
@@ -754,7 +816,7 @@ void DetectorConstruction::BuildOtherBuildings(G4LogicalVolume* world_log) {
   auto boxBuildD = new G4Box("boxBuildD", BuildDsizeX / 2. * m, BuildDsizeY / 2. * m, BuildDsizeZ / 2. * m);
   auto logBuildD = new G4LogicalVolume(boxBuildD, concrete, "logBuildD");
   G4VPhysicalVolume* physBuildD = new G4PVPlacement(
-      nullptr, G4ThreeVector(BuildDposX * m, BuildDposY * m, BuildDposZ * m), logBuildD, "physBuildD", world_log, false, 0, check_overlaps_);
+      nullptr, G4ThreeVector(BuildDposX * m, BuildDposY * m, BuildDposZ * m), logBuildD, "physBuildD", world_log_, false, 0, check_overlaps_);
 
   auto boxBuildAirD = new G4Box("boxBuildAirD", (BuildDsizeX - 1.) / 2. * m, (BuildDsizeY - 1.) / 2. * m, (BuildDsizeZ - 1.) / 2. * m);
   auto logBuildAirD = new G4LogicalVolume(boxBuildAirD, air, "logBuildAirD");
@@ -777,7 +839,7 @@ void DetectorConstruction::BuildOtherBuildings(G4LogicalVolume* world_log) {
       G4ThreeVector(BuildNewposX * m, BuildNewposY * m, BuildNewposZ * m),
       logBuildNew,
       "physBuildNew",
-      world_log,
+      world_log_,
       false,
       0,
       check_overlaps_);
@@ -799,7 +861,7 @@ void DetectorConstruction::BuildOtherBuildings(G4LogicalVolume* world_log) {
   auto boxReact = new G4Box("boxReact", ReactsizeX / 2. * m, ReactsizeY / 2. * m, ReactsizeZ / 2. * m);
   auto logReact = new G4LogicalVolume(boxReact, concrete, "logReact");
   G4VPhysicalVolume* physReact = new G4PVPlacement(
-      nullptr, G4ThreeVector(ReactposX * m, ReactposY * m, ReactposZ * m), logReact, "physReact", world_log, false, 0, check_overlaps_);
+      nullptr, G4ThreeVector(ReactposX * m, ReactposY * m, ReactposZ * m), logReact, "physReact", world_log_, false, 0, check_overlaps_);
 
   auto boxReactAir = new G4Box("boxReactAir", (ReactsizeX - 1.) / 2. * m, (ReactsizeY - 1.) / 2. * m, (ReactsizeZ - 1.) / 2. * m);
   auto logReactAir = new G4LogicalVolume(boxReactAir, air, "logReactAir");
@@ -850,7 +912,7 @@ void DetectorConstruction::BuildOtherBuildings(G4LogicalVolume* world_log) {
 }
 
 // NEVOD
-void DetectorConstruction::BuildCWD(G4LogicalVolume* water_log) {
+void DetectorConstruction::BuildCWD() {
   //============================================================================
   // Materials
   //============================================================================
@@ -886,7 +948,7 @@ void DetectorConstruction::BuildCWD(G4LogicalVolume* water_log) {
 
   auto aluminium_tube = new G4Tubs("Tube", 0. * mm, 102.5 * mm, 157. / 2. * mm, start_angle, spanning_angle);
 
-  auto air_tube = new G4Tubs("AirTube", 0. * mm, 97.5 * mm, 157. / 2. * mm, start_angle, spanning_angle);
+  air_tube_ = new G4Tubs("AirTube", 0. * mm, 97.5 * mm, 157. / 2. * mm, start_angle, spanning_angle);
 
   // auto illuminator_tube = new G4Tubs("Illuminator", 0. * mm, 102.5 * mm, 8. / 2. * mm, start_angle, spanning_angle);  // a) 1/2 in water
 
@@ -896,8 +958,7 @@ void DetectorConstruction::BuildCWD(G4LogicalVolume* water_log) {
 
   auto glass_tube = new G4Tubs("Glass", inner_rad_glass, outer_rad_glass, height_glass, start_angle, spanning_angle);
 
-  auto photocathode_tube =
-      new G4Tubs("Photocathode", inner_rad_photocathode, outer_rad_photocathode, height_photocathode, start_angle, spanning_angle);
+  photocathode_tube_ = new G4Tubs("Photocathode", inner_rad_photocathode, outer_rad_photocathode, height_photocathode, start_angle, spanning_angle);
 
   //============================================================================
   // Buildings construction
@@ -929,23 +990,19 @@ void DetectorConstruction::BuildCWD(G4LogicalVolume* water_log) {
   rot_matrices[4]->rotateY(180.0 * deg);
   rot_matrices[5]->rotateX(0.0 * deg);
 
-  auto m_box_log = initVector3D<G4LogicalVolume*>(cwd_plane_number_, 4, 4);
-  auto m_box_a_log = initVector3D<G4LogicalVolume*>(cwd_plane_number_, 4, 4);
-  auto aluminium_tube_log = initVector4D<G4LogicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
-  auto air_tube_log = initVector4D<G4LogicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
-  auto illuminator_log = initVector4D<G4LogicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
-  auto silicone_log = initVector4D<G4LogicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
-  auto glass_log = initVector4D<G4LogicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
-  auto photocathode_log = initVector4D<G4LogicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  auto m_box_log = init_vector3d<G4LogicalVolume*>(cwd_plane_number_, 4, 4);
+  auto m_box_a_log = init_vector3d<G4LogicalVolume*>(cwd_plane_number_, 4, 4);
+  auto aluminium_tube_log = init_vector4d<G4LogicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  auto illuminator_log = init_vector4d<G4LogicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  auto silicone_log = init_vector4d<G4LogicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  auto glass_log = init_vector4d<G4LogicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
 
-  auto m_box_phys = initVector3D<G4VPhysicalVolume*>(cwd_plane_number_, 4, 4);
-  auto m_box_a_phys = initVector3D<G4VPhysicalVolume*>(cwd_plane_number_, 4, 4);
-  auto aluminium_tube_phys = initVector4D<G4VPhysicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
-  auto air_tube_phys = initVector4D<G4VPhysicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
-  auto illuminator_phys = initVector4D<G4VPhysicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
-  auto silicone_phys = initVector4D<G4VPhysicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
-  auto glass_phys = initVector4D<G4VPhysicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
-  auto photocathode_phys = initVector4D<G4VPhysicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  auto m_box_phys = init_vector3d<G4VPhysicalVolume*>(cwd_plane_number_, 4, 4);
+  auto m_box_a_phys = init_vector3d<G4VPhysicalVolume*>(cwd_plane_number_, 4, 4);
+  auto aluminium_tube_phys = init_vector4d<G4VPhysicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  auto illuminator_phys = init_vector4d<G4VPhysicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  auto silicone_phys = init_vector4d<G4VPhysicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  auto glass_phys = init_vector4d<G4VPhysicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
 
   for (size_t plane = 0; plane < cwd_plane_number_; plane++) {
     for (size_t stripe = 0; stripe < stride_config_[plane]; stripe++) {
@@ -965,7 +1022,7 @@ void DetectorConstruction::BuildCWD(G4LogicalVolume* water_log) {
         m_box_log[plane][stripe][module] = new G4LogicalVolume(m_box_tube, aluminium, "MBox");
 
         m_box_phys[plane][stripe][module] =
-            new G4PVPlacement(nullptr, position, m_box_log[plane][stripe][module], "MBox", water_log, false, 0, check_overlaps_);
+            new G4PVPlacement(nullptr, position, m_box_log[plane][stripe][module], "MBox", water_log_, false, 0, check_overlaps_);
 
         m_box_a_log[plane][stripe][module] = new G4LogicalVolume(m_box_a_tube, air, "MBoxA");
 
@@ -978,14 +1035,14 @@ void DetectorConstruction::BuildCWD(G4LogicalVolume* water_log) {
           aluminium_tube_log[plane][stripe][module][i] = new G4LogicalVolume(aluminium_tube, aluminium, "Tube");
 
           aluminium_tube_phys[plane][stripe][module][i] = new G4PVPlacement(
-              rot_matrices[i], position, aluminium_tube_log[plane][stripe][module][i], "Tube", water_log, false, 0, check_overlaps_);
+              rot_matrices[i], position, aluminium_tube_log[plane][stripe][module][i], "Tube", water_log_, false, 0, check_overlaps_);
 
-          air_tube_log[plane][stripe][module][i] = new G4LogicalVolume(air_tube, air, "AirTube");
+          air_tube_log_[plane][stripe][module][i] = new G4LogicalVolume(air_tube_, air, "AirTube");
 
-          air_tube_phys[plane][stripe][module][i] = new G4PVPlacement(
+          air_tube_phys_[plane][stripe][module][i] = new G4PVPlacement(
               nullptr,
               null_position,
-              air_tube_log[plane][stripe][module][i],
+              air_tube_log_[plane][stripe][module][i],
               "AirTube",
               aluminium_tube_log[plane][stripe][module][i],
               false,
@@ -1002,7 +1059,7 @@ void DetectorConstruction::BuildCWD(G4LogicalVolume* water_log) {
               position,
               illuminator_log[plane][stripe][module][i],
               "Illuminator",
-              air_tube_log[plane][stripe][module][i],
+              air_tube_log_[plane][stripe][module][i],
               false,
               0,
               check_overlaps_);
@@ -1014,7 +1071,7 @@ void DetectorConstruction::BuildCWD(G4LogicalVolume* water_log) {
               G4ThreeVector(0. * mm, 0. * mm, (157. / 2. - 16. - 3. / 2.) * mm),
               silicone_log[plane][stripe][module][i],
               "Silicone",
-              air_tube_log[plane][stripe][module][i],
+              air_tube_log_[plane][stripe][module][i],
               false,
               0,
               check_overlaps_);
@@ -1026,20 +1083,20 @@ void DetectorConstruction::BuildCWD(G4LogicalVolume* water_log) {
               G4ThreeVector(0. * mm, 0. * mm, (157. / 2. - 16. - 3. - 6. / 2.) * mm),
               glass_log[plane][stripe][module][i],
               "Glass",
-              air_tube_log[plane][stripe][module][i],
+              air_tube_log_[plane][stripe][module][i],
               false,
               0,
               check_overlaps_);
 
-          photocathode_log[plane][stripe][module][i] = new G4LogicalVolume(photocathode_tube, aluminium, "Photocathode");
+          photocathode_log_[plane][stripe][module][i] = new G4LogicalVolume(photocathode_tube_, aluminium, "Photocathode");
 
-          photocathode_phys[plane][stripe][module][i] = new G4PVPlacement(
+          photocathode_phys_[plane][stripe][module][i] = new G4PVPlacement(
               nullptr,
               G4ThreeVector(0. * mm, 0. * mm, (157. / 2. - 16. - 3. - 6. - 0.1 / 2.) * mm),
 
-              photocathode_log[plane][stripe][module][i],
+              photocathode_log_[plane][stripe][module][i],
               "Photocathode",
-              air_tube_log[plane][stripe][module][i],
+              air_tube_log_[plane][stripe][module][i],
               false,
               pmt_count,
               check_overlaps_);
@@ -1074,20 +1131,20 @@ void DetectorConstruction::BuildCWD(G4LogicalVolume* water_log) {
   optical_plexiglass_tube_surface->SetFinish(polished);
   optical_plexiglass_tube_surface->SetModel(unified);
 
-  auto glass_pmt_surface = initVector4D<G4LogicalBorderSurface*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
-  // auto plexiglass_tube_surface = initVector4D<G4LogicalBorderSurface*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
-  // auto plexiglass_water_surface = initVector4D<G4LogicalBorderSurface*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
-  // auto plexiglass_glass_surface = initVector4D<G4LogicalBorderSurface*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
-  // auto glass_tube_surface = initVector4D<G4LogicalBorderSurface*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
-  // auto water_tube_surface = initVector4D<G4LogicalBorderSurface*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
-  // auto water_m_box_surface = initVector4D<G4LogicalBorderSurface*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  auto glass_pmt_surface = init_vector4d<G4LogicalBorderSurface*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  // auto plexiglass_tube_surface = init_vector4d<G4LogicalBorderSurface*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  // auto plexiglass_water_surface = init_vector4d<G4LogicalBorderSurface*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  // auto plexiglass_glass_surface = init_vector4d<G4LogicalBorderSurface*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  // auto glass_tube_surface = init_vector4d<G4LogicalBorderSurface*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  // auto water_tube_surface = init_vector4d<G4LogicalBorderSurface*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
+  // auto water_m_box_surface = init_vector4d<G4LogicalBorderSurface*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
 
   for (size_t plane = 0; plane < cwd_plane_number_; plane++) {
     for (size_t stripe = 0; stripe < stride_config_[plane]; stripe++) {
       for (size_t module = 0; module < qsm_config_[plane]; module++) {
         for (size_t i = 0; i < PMT_PER_QSM; i++) {
           glass_pmt_surface[plane][stripe][module][i] = new G4LogicalBorderSurface(
-              "GlassPMTSurface", glass_phys[plane][stripe][module][i], photocathode_phys[plane][stripe][module][i], optical_plexiglass_tube_surface);
+              "GlassPMTSurface", glass_phys[plane][stripe][module][i], photocathode_phys_[plane][stripe][module][i], optical_plexiglass_tube_surface);
         }
       }
     }
@@ -1095,7 +1152,7 @@ void DetectorConstruction::BuildCWD(G4LogicalVolume* water_log) {
 }
 
 // DECOR
-void DetectorConstruction::BuildDECOR(G4LogicalVolume* world_log) {
+void DetectorConstruction::BuildDECOR() {
   //============================================================================
   // Materials
   //============================================================================
@@ -1202,14 +1259,14 @@ void DetectorConstruction::BuildDECOR(G4LogicalVolume* world_log) {
         super_module_box_[super_module][plane][i] = new G4Box(name, size_x / 2, size_y / 2, size_z / 2);
         super_module_log_[super_module][plane][i] = new G4LogicalVolume(super_module_box_[super_module][plane][i], aluminium, name);
         super_module_phys_[super_module][plane][i] = new G4PVPlacement(
-            nullptr, G4ThreeVector(pos_x, pos_y, pos_z), super_module_log_[super_module][plane][i], name, world_log, false, plane, check_overlaps_);
+            nullptr, G4ThreeVector(pos_x, pos_y, pos_z), super_module_log_[super_module][plane][i], name, world_log_, false, plane, check_overlaps_);
       }
     }
   }
 }
 
 // SCT
-void DetectorConstruction::BuildSCT(G4LogicalVolume* world_log, G4LogicalVolume* water_log) {
+void DetectorConstruction::BuildSCT() {
   //============================================================================
   // Materials
   //============================================================================
@@ -1267,7 +1324,7 @@ void DetectorConstruction::BuildSCT(G4LogicalVolume* world_log, G4LogicalVolume*
             G4ThreeVector(counter_pos_x, counter_pos_y, counter_pos_z),
             sct_counter_log_[counter_id].first,
             "Counter",
-            world_log,
+            world_log_,
             false,
             counter_id,
             check_overlaps_);
@@ -1317,7 +1374,7 @@ void DetectorConstruction::BuildSCT(G4LogicalVolume* world_log, G4LogicalVolume*
               G4ThreeVector(counter_pos_x, counter_pos_y, counter_pos_z),
               sct_counter_log_[counter_id].first,
               "Counter",
-              world_log,
+              world_log_,
               false,
               counter_id,
               check_overlaps_);
@@ -1389,7 +1446,7 @@ void DetectorConstruction::BuildPRISMA() {
   //     nullptr,
   //     G4ThreeVector(floor1_posX, floor1_posY, floor1_posZ),
   //     // logicFloor1,     // its logical volume "Floor",         // its name
-  //     world_log,  // its mother  volume
+  //     world_log_,  // its mother  volume
   //     false,      // no boolean operation
   //     0,
   //     check_overlaps_);
@@ -1409,7 +1466,7 @@ void DetectorConstruction::BuildPRISMA() {
   //     nullptr,
   //     G4ThreeVector(floor1_posX, floor2_posY, floor1_posZ),
   //     // logicFloor2,     // its logical volume "Floor",         // its name
-  //     world_log,  // its mother  volume
+  //     world_log_,  // its mother  volume
   //     false,      // no boolean operation
   //     0,
   //     check_overlaps_);
@@ -1435,7 +1492,7 @@ void DetectorConstruction::BuildPRISMA() {
   //     G4ThreeVector(floor31_posX, floor31_posY, floor1_posZ),  //
   //     logicFloor31,                                            // its logical volume
   //     "Floor",                                                 // its name
-  //     world_log,                                               // its mother  volume
+  //     world_log_,                                               // its mother  volume
   //     false,                                                   // no boolean operation
   //     0,
   //     check_overlaps_);
@@ -1460,7 +1517,7 @@ void DetectorConstruction::BuildPRISMA() {
   //     G4ThreeVector(floor32_posX, floor32_posY, floor1_posZ),  //
   //     logicFloor32,                                            // its logical volume
   //     "Floor",                                                 // its name
-  //     world_log,                                               // its mother  volume
+  //     world_log_,                                               // its mother  volume
   //     false,                                                   // no boolean operation
   //     0,
   //     check_overlaps_);
@@ -1485,7 +1542,7 @@ void DetectorConstruction::BuildPRISMA() {
   //     G4ThreeVector(floor33_posX, floor33_posY, floor1_posZ),  //
   //     logicFloor33,                                            // its logical volume
   //     "Floor",                                                 // its name
-  //     world_log,                                               // its mother  volume
+  //     world_log_,                                               // its mother  volume
   //     false,                                                   // no boolean operation
   //     0,
   //     check_overlaps_);
@@ -1512,7 +1569,7 @@ void DetectorConstruction::BuildPRISMA() {
   //     G4ThreeVector(floor34_posX, floor34_posY, floor34_posZ),  //
   //     logicFloor34,                                             // its logical volume
   //     "Floor",                                                  // its name
-  //     world_log,                                                // its mother  volume
+  //     world_log_,                                                // its mother  volume
   //     false,                                                    // no boolean operation
   //     0,
   //     check_overlaps_);
@@ -1539,7 +1596,7 @@ void DetectorConstruction::BuildPRISMA() {
   //     G4ThreeVector(floor35_posX, floor35_posY, floor34_posZ),  //
   //     logicFloor35,                                             // its logical volume
   //     "Floor",                                                  // its name
-  //     world_log,                                                // its mother  volume
+  //     world_log_,                                                // its mother  volume
   //     false,                                                    // no boolean operation
   //     0,
   //     check_overlaps_);
@@ -1564,7 +1621,7 @@ void DetectorConstruction::BuildPRISMA() {
   //     nullptr,
   //     G4ThreeVector(floor4_posX, floor4_posY, floor1_posZ),
   //     // logicFloor4,     // its logical volume "Floor",         // its name
-  //     world_log,  // its mother  volume
+  //     world_log_,  // its mother  volume
   //     false,      // no boolean operation
   //     0,
   //     check_overlaps_);
@@ -1674,24 +1731,24 @@ void DetectorConstruction::BuildPRISMA() {
   //   solidDet[i] = new G4Tubs("DetPr", 0., 34. * cm, 0.5 * 0.1 * mm, 0.,
   //                            2. * M_PI);  // 0.1*mm
   //   logicDet[i] = new G4LogicalVolume(solidDet[i], LiF_ZnS, "DetPr");
-  //   physDet[i] = new G4PVPlacement(nullptr, G4ThreeVector(posXPr[i], posYPr[i], posZPr), logicDet[i], "DetPr", world_log, false, i,
+  //   physDet[i] = new G4PVPlacement(nullptr, G4ThreeVector(posXPr[i], posYPr[i], posZPr), logicDet[i], "DetPr", world_log_, false, i,
   //   check_overlaps_);
 
   //   solidBar1[i] = new G4Tubs("BarrelPr", 36.5 * cm, 37. * cm, 28 * cm, 0., 2. * M_PI);
   //   logicBar1[i] = new G4LogicalVolume(solidBar1[i], bar_mat, "BarrelPr");
   //   physBar1[i] =
-  //       new G4PVPlacement(nullptr, G4ThreeVector(posXPr[i], posYPr[i], posZPrBar), logicBar1[i], "BarrelPr", world_log, false, i,
+  //       new G4PVPlacement(nullptr, G4ThreeVector(posXPr[i], posYPr[i], posZPrBar), logicBar1[i], "BarrelPr", world_log_, false, i,
   //       check_overlaps_);
 
   //   solidBarDown[i] = new G4Tubs("BarDown", 0., 37. * cm, 0.5 * 5 * mm, 0., 2. * M_PI);  //
   //   logicBarDown[i] = new G4LogicalVolume(solidBarDown[i], bar_mat, "BarDown");
   //   physBarDown[i] = new G4PVPlacement(
-  //       nullptr, G4ThreeVector(posXPr[i], posYPr[i], posZPrBarDown), logicBarDown[i], "BarDown", world_log, false, i, check_overlaps_);
+  //       nullptr, G4ThreeVector(posXPr[i], posYPr[i], posZPrBarDown), logicBarDown[i], "BarDown", world_log_, false, i, check_overlaps_);
 
   //   solidBarUp[i] = new G4Tubs("BarUp", 0., 37. * cm, 0.5 * 5 * mm, 0., 2. * M_PI);  //
   //   logicBarUp[i] = new G4LogicalVolume(solidBarUp[i], bar_mat, "BarUp");
   //   physBarUp[i] =
-  //       new G4PVPlacement(nullptr, G4ThreeVector(posXPr[i], posYPr[i], posZPrBarUp), logicBarUp[i], "BarUp", world_log, false, i,
+  //       new G4PVPlacement(nullptr, G4ThreeVector(posXPr[i], posYPr[i], posZPrBarUp), logicBarUp[i], "BarUp", world_log_, false, i,
   //       check_overlaps_);
   // }
 
@@ -1699,23 +1756,23 @@ void DetectorConstruction::BuildPRISMA() {
   // {
   //   solidDet2[i] = new G4Tubs("DetU", 0., 34. * cm, 0.5 * 0.1 * mm, 0., 2. * M_PI);
   //   logicDet2[i] = new G4LogicalVolume(solidDet2[i], B2O3_ZnS, "DetU");
-  //   physDet2[i] = new G4PVPlacement(nullptr, G4ThreeVector(posXU[i], posYU[i], posZU), logicDet2[i], "DetU", world_log, false, i,
+  //   physDet2[i] = new G4PVPlacement(nullptr, G4ThreeVector(posXU[i], posYU[i], posZU), logicDet2[i], "DetU", world_log_, false, i,
   //   check_overlaps_);
 
   //   solidBar2[i] = new G4Tubs("BarrelU", 36.5 * cm, 37. * cm, 28. * cm, 0., 2. * M_PI);
   //   logicBar2[i] = new G4LogicalVolume(solidBar2[i], bar_mat, "BarrelU");
   //   physBar2[i] =
-  //       new G4PVPlacement(nullptr, G4ThreeVector(posXU[i], posYU[i], posZUBar), logicBar2[i], "BarrelU", world_log, false, i, check_overlaps_);
+  //       new G4PVPlacement(nullptr, G4ThreeVector(posXU[i], posYU[i], posZUBar), logicBar2[i], "BarrelU", world_log_, false, i, check_overlaps_);
 
   //   solidBarDown2[i] = new G4Tubs("BarDown2", 0., 37. * cm, 2.5 * mm, 0., 2. * M_PI);  //
   //   logicBarDown2[i] = new G4LogicalVolume(solidBarDown2[i], bar_mat, "BarDown2");
   //   physBarDown2[i] = new G4PVPlacement(
-  //       nullptr, G4ThreeVector(posXU[i], posYU[i], posZUBarDown), logicBarDown2[i], "BarDown2", world_log, false, i, check_overlaps_);
+  //       nullptr, G4ThreeVector(posXU[i], posYU[i], posZUBarDown), logicBarDown2[i], "BarDown2", world_log_, false, i, check_overlaps_);
 
   //   solidBarUp2[i] = new G4Tubs("BarUp2", 0., 37. * cm, 2.5 * mm, 0., 2. * M_PI);  //
   //   logicBarUp2[i] = new G4LogicalVolume(solidBarUp2[i], bar_mat, "BarUp2");
   //   physBarUp2[i] =
-  //       new G4PVPlacement(nullptr, G4ThreeVector(posXU[i], posYU[i], posZUBarUp), logicBarUp2[i], "BarUp2", world_log, false, i,
+  //       new G4PVPlacement(nullptr, G4ThreeVector(posXU[i], posYU[i], posZUBarUp), logicBarUp2[i], "BarUp2", world_log_, false, i,
   //       check_overlaps_);
   // }
 }
@@ -1929,7 +1986,7 @@ void DetectorConstruction::BuildEAS() {
   //         G4ThreeVector(FloorNEposX * m, FloorNEposY * m, FloorNEposZ * m),
   //         logFloorNE[icl],
   //         "physFloorNE",
-  //         world_log,
+  //         world_log_,
   //         false,
   //         icl,
   //         check_overlaps_);
@@ -1948,7 +2005,7 @@ void DetectorConstruction::BuildEAS() {
   //         G4ThreeVector(RoofNEposX * m, RoofNEposY * m, RoofNEposZ * m),
   //         logRoofNE[ist],
   //         "physRoofNE",
-  //         world_log,
+  //         world_log_,
   //         false,
   //         ist,
   //         check_overlaps_);
@@ -1981,7 +2038,7 @@ void DetectorConstruction::BuildEAS() {
   //         G4ThreeVector(WallStatNEXposX * m, WallStatNEXposY1 * m, WallStatNEposZ * m),
   //         logWallStatNEX1[ist],
   //         "physWallStatNEX1",
-  //         world_log,
+  //         world_log_,
   //         false,
   //         idet,
   //         check_overlaps_);
@@ -1993,7 +2050,7 @@ void DetectorConstruction::BuildEAS() {
   //         G4ThreeVector(WallStatNEXposX * m, WallStatNEXposY2 * m, WallStatNEposZ * m),
   //         logWallStatNEX2[ist],
   //         "physWallStatNEX2",
-  //         world_log,
+  //         world_log_,
   //         false,
   //         idet,
   //         check_overlaps_);
@@ -2005,7 +2062,7 @@ void DetectorConstruction::BuildEAS() {
   //         G4ThreeVector(WallStatNEYposX1 * m, WallStatNEYposY * m, WallStatNEposZ * m),
   //         logWallStatNEY1[ist],
   //         "physWallStatNEY1",
-  //         world_log,
+  //         world_log_,
   //         false,
   //         idet,
   //         check_overlaps_);
@@ -2017,7 +2074,7 @@ void DetectorConstruction::BuildEAS() {
   //         G4ThreeVector(WallStatNEYposX2 * m, WallStatNEYposY * m, WallStatNEposZ * m),
   //         logWallStatNEY2[ist],
   //         "physWallStatNEY2",
-  //         world_log,
+  //         world_log_,
   //         false,
   //         idet,
   //         check_overlaps_);
@@ -2037,7 +2094,7 @@ void DetectorConstruction::BuildEAS() {
   //           G4ThreeVector(CaseNEposX * m, CaseNEposY * m, CaseNEposZ * m),
   //           logCaseNE[idet],
   //           "physCaseNE",
-  //           world_log,
+  //           world_log_,
   //           false,
   //           idet,
   //           check_overlaps_);

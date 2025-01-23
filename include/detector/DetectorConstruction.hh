@@ -8,11 +8,17 @@
 #include "G4NistManager.hh"
 #include "G4OpticalSurface.hh"
 #include "G4PVPlacement.hh"
+#include "G4SDManager.hh"
 #include "G4SystemOfUnits.hh"
 #include "G4Tubs.hh"
 #include "G4VUserDetectorConstruction.hh"
 #include "G4VisAttributes.hh"
 #include "control/Communicator.hh"
+#include "detector/sensetive/Control.hh"
+#include "detector/sensetive/DECOR.hh"
+#include "detector/sensetive/QSM.hh"
+#include "detector/sensetive/SCT.hh"
+#include "detector/sensetive/Water.hh"
 #include "globals.hh"
 
 #define PMT_PER_QSM 6
@@ -21,26 +27,6 @@
 #define DECOR_CHAMBER_COUNT 8
 
 #define BOX_SIDE_COUNT 6
-
-// Template for 3D vector
-template <typename T>
-using Vector3D = std::vector<std::vector<std::vector<T>>>;
-
-// Template for 4D vector
-template <typename T>
-using Vector4D = std::vector<std::vector<std::vector<std::vector<T>>>>;
-
-// Function to initialize a 3D vector
-template <typename T>
-Vector3D<T> initVector3D(size_t dim1, size_t dim2, size_t dim3, T init_value = nullptr) {
-  return Vector3D<T>(dim1, std::vector<std::vector<T>>(dim2, std::vector<T>(dim3, init_value)));
-}
-
-// Function to initialize a 4D vector
-template <typename T>
-Vector4D<T> initVector4D(size_t dim1, size_t dim2, size_t dim3, size_t dim4, T init_value = nullptr) {
-  return Vector4D<T>(dim1, std::vector<std::vector<std::vector<T>>>(dim2, std::vector<std::vector<T>>(dim3, std::vector<T>(dim4, init_value))));
-}
 
 namespace nevod {
 
@@ -56,17 +42,17 @@ class DetectorConstruction : public G4VUserDetectorConstruction {
  private:
   void GenerateMaterials();
 
-  G4LogicalVolume* BuildNEVOD(G4LogicalVolume* world_log);
-  void BuildOtherBuildings(G4LogicalVolume* world_log);
+  void BuildNEVOD();
+  void BuildOtherBuildings();
 
   // NEVOD
-  void BuildCWD(G4LogicalVolume* water_log);
+  void BuildCWD();
 
   // DECOR
-  void BuildDECOR(G4LogicalVolume* world_log);
+  void BuildDECOR();
 
   // SCT
-  void BuildSCT(G4LogicalVolume* world_log, G4LogicalVolume* water_log);
+  void BuildSCT();
 
   // PRISMA-URAN
   void BuildPRISMA();
@@ -83,6 +69,9 @@ class DetectorConstruction : public G4VUserDetectorConstruction {
   G4double experimental_hall_x_;
   G4double experimental_hall_y_;
   G4double experimental_hall_z_;
+  G4Box* world_box_ = nullptr;
+  G4LogicalVolume* world_log_ = nullptr;
+  G4VPhysicalVolume* world_phys_ = nullptr;
 
   // Configuration
   ConstructionFlags construction_flags_;
@@ -91,6 +80,14 @@ class DetectorConstruction : public G4VUserDetectorConstruction {
   G4int cwd_plane_number_;
   std::vector<G4int> stride_config_;
   std::vector<G4int> qsm_config_;
+
+  G4Tubs* air_tube_ = nullptr;
+  vector4d<G4LogicalVolume*> air_tube_log_;
+  vector4d<G4VPhysicalVolume*> air_tube_phys_;
+
+  G4Tubs* photocathode_tube_ = nullptr;
+  vector4d<G4LogicalVolume*> photocathode_log_;
+  vector4d<G4VPhysicalVolume*> photocathode_phys_;
 
   // SCT (2 for outer and inner)
   std::pair<G4int, G4int> sct_plane_number_;
@@ -112,6 +109,9 @@ class DetectorConstruction : public G4VUserDetectorConstruction {
   std::vector<G4Box*> control_nevod_box_{BOX_SIDE_COUNT};
   std::vector<G4LogicalVolume*> control_nevod_log_{BOX_SIDE_COUNT};
   std::vector<G4VPhysicalVolume*> control_nevod_phys_{BOX_SIDE_COUNT};
+  G4Box* water_box_ = nullptr;
+  G4LogicalVolume* water_log_ = nullptr;
+  G4VPhysicalVolume* water_phys_ = nullptr;
 
   /*
   // NEVOD-EAS

@@ -4,10 +4,27 @@
 #include "G4ThreeVector.hh"
 #include "globals.hh"
 
-namespace nevod {
+// Template for 3D vector
+template <typename T>
+using vector3d = std::vector<std::vector<std::vector<T>>>;
 
-using vector_3d = std::vector<std::vector<std::vector<G4double>>>;
-using vector_4d = std::vector<std::vector<std::vector<std::vector<G4double>>>>;
+// Template for 4D vector
+template <typename T>
+using vector4d = std::vector<std::vector<std::vector<std::vector<T>>>>;
+
+// Function to initialize a 3D vector
+template <typename T>
+vector3d<T> init_vector3d(size_t dim1, size_t dim2, size_t dim3, T init_value = nullptr) {
+  return vector3d<T>(dim1, std::vector<std::vector<T>>(dim2, std::vector<T>(dim3, init_value)));
+}
+
+// Function to initialize a 4D vector
+template <typename T>
+vector4d<T> init_vector4d(size_t dim1, size_t dim2, size_t dim3, size_t dim4, T init_value = nullptr) {
+  return vector4d<T>(dim1, std::vector<std::vector<std::vector<T>>>(dim2, std::vector<std::vector<T>>(dim3, std::vector<T>(dim4, init_value))));
+}
+
+namespace nevod {
 
 struct TrackData {
   G4int detected_copy_num = -1;
@@ -48,7 +65,7 @@ struct EventData {
   std::pair<TrackData, TrackData> muon_nevod{};
 
   // DECOR
-  vector_3d muon_decor;
+  vector3d<G4double> muon_decor;
 
   // SCT
   std::vector<G4double> edep_count_sct_flatten;
