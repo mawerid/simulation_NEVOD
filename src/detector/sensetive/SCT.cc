@@ -17,8 +17,10 @@ G4bool SCTSensetiveDetector::ProcessHits(G4Step* step, G4TouchableHistory* histo
     if (track_id == 1 && parent_id == 0) {
       auto copy_number = track->GetVolume()->GetCopyNo();
       auto event_data = communicator_->GetEventData();
+      CounterId id = communicator_->GetCounterId(copy_number);
 
-      if (copy_number >= 0 && copy_number < total_sct_count_) event_data->edep_count_sct_flatten[copy_number] += step->GetTotalEnergyDeposit() / MeV;
+      if (copy_number >= 0 && copy_number < total_sct_count_)
+        event_data->edep_count_sct[id.side][id.plane][id.row] += step->GetTotalEnergyDeposit() / MeV;
     }
   }
 

@@ -1,7 +1,18 @@
 #ifndef EVENT_DATA_HH
 #define EVENT_DATA_HH
 
+#include <vector>
+
+#include "G4RandomTools.hh"
+#include "G4SystemOfUnits.hh"
 #include "G4ThreeVector.hh"
+#include "Rtypes.h"
+#include "TFile.h"
+#include "TMath.h"
+#include "TObject.h"
+#include "TROOT.h"
+#include "TTree.h"
+#include "TVector3.h"
 #include "globals.hh"
 
 // Template for 3D vector
@@ -31,53 +42,68 @@ struct TrackData {
   G4ThreeVector coordinate{};
   G4ThreeVector momentum{};
   G4double energy{};
+};
 
-  TrackData() = default;
+struct ParticleData : public TObject {
+  ULong_t particle_id{};
+  ULong_t particle_num{};
+  TVector3 coordinate{};  // in metres
+  TVector3 momentum{};
+  Double_t energy{};  // in GeV
 
-  ~TrackData() = default;
+  // ROOT dictionary support
+  ClassDef(nevod::ParticleData, 1);
 };
 
 struct EventData {
-  G4long event_count{};
-  G4long run_num{};
-  G4long event_num{};
+  ULong_t event_id{};
+  ULong_t primary_particle_id{};
+  ULong_t particle_amount{};
+  Double_t theta{}, phi{};  // in degrees
 
   // Initial data
-  G4ThreeVector start{};
-  G4ThreeVector end{};
-
-  G4double energy{};
-  G4int particle_num{};
+  std::vector<ParticleData> particles;
 
   // Data after simulation
-  G4double theta{}, phi{};
+  Double_t theta_rec{}, phi_rec{};  // in degrees
 
-  G4double energy_dep{};
-  G4long particle_count{};
-  G4double track_length{};
-  G4long muon_count{};
-  G4double energy_start{};
-  G4double energy_end{};
+  Double_t energy_dep{};  // in GeV
+  ULong_t particle_count{};
+  Double_t track_length{};  // in metres
+  ULong_t muon_count{};
+  Double_t energy_start{};  // in GeV
+  Double_t energy_end{};    // in GeV
 
-  std::chrono::duration<double> duration{};
+  std::chrono::steady_clock::time_point start_time;
+  Long64_t duration{};  // in nanoseconds
 
   // NEVOD
-  std::pair<TrackData, TrackData> muon_nevod{};
+  std::pair<TrackData, TrackData> muon_nevod;
 
   // DECOR
-  vector3d<G4double> muon_decor;
+  vector3d<Double_t> muon_decor;
+  vector3d<Double_t> muon_decor_w;
 
   // SCT
-  std::vector<G4double> edep_count_sct_flatten;
+  vector3d<Double_t> edep_count_sct;
 
   // CWD NEVOD
-  std::vector<G4int> photoelectron_num;
-  // vector_4d amplitude_qsm;
+  std::vector<Int_t> photoelectron_num;
 
-  // TODO: write proper constructor with initialization, loading and saving in file
-  EventData() = default;
+  vector4d<Double_t> amplitude_qsm;
+
+  EventData();
+  EventData(ULong_t event_id, ULong_t primary_particle_id, ULong_t particle_amount, Double_t theta, Double_t phi);
 
   ~EventData() = default;
+
+  void ConnectHeaderTree(TTree* tree);
+  void ConnectEventTree(TTree* tree);
+
+  void Print() const;
+  std::ostream& operator<<(std::ostream& os) const;
+
+  void Clear(G4bool clear_header = true);
 };
 
 }  // namespace nevod

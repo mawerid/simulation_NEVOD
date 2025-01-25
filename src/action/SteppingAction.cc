@@ -12,7 +12,7 @@ void SteppingAction::UserSteppingAction(const G4Step* step) {
   if (step_count_ >= max_step_count_) {
     step_count_ = 0;
     auto end = std::chrono::steady_clock::now();
-    auto start = communicator_->GetEventSimulationStartTime();
+    auto start = communicator_->GetEventStartTime();
     auto sim_time = std::chrono::duration_cast<std::chrono::minutes>(end - start);
     if (sim_time.count() >= 1.0) {
       G4cout << "\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"

@@ -30,7 +30,7 @@ G4bool PhotocathodeSensetiveDetector::ProcessHits(G4Step* step, G4TouchableHisto
     G4double kinetic_energy = step->GetTrack()->GetKineticEnergy();
     step->GetTrack()->SetTrackStatus(fStopAndKill);
 
-    G4int energy = int((kinetic_energy - photon_energy[0]) / energy_median + 0.5);
+    G4int energy = int((kinetic_energy - photon_energy[0]) / energy_step + 0.5);
     // energy range check
     if (energy >= minimum_energy_ && energy < maximum_energy_) {
       // photo effect

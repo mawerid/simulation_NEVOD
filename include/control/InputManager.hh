@@ -20,7 +20,6 @@ struct DataFile {
   G4int event_num;
 
   DataFile(G4String data_dir_name, G4String dataset_name, G4int event_num);
-  // : dir_num(dir_num), data_num(data_num), event_num(event_num) {}
 
   ~DataFile() = default;
 
@@ -28,27 +27,29 @@ struct DataFile {
 };
 
 class InputManager {
-  G4int file_num_;
-  G4int thread_num_;
+  G4int files_num_ = 0;
+  G4int thread_num_ = 0;
+  Communicator* communicator_ = nullptr;
+  size_t offset_ = 0;
 
-  G4String path_;
-  size_t offset_;
+  std::string path_;
 
-  Communicator* communicator_;
   std::vector<DataFile> files_;
 
   G4int current_file_id;
 
+  G4Mutex mutex_ = G4MUTEX_INITIALIZER;
+
  public:
   InputManager(Communicator* communicator, size_t offset = 0);
 
-  ~InputManager();
+  ~InputManager() = default;
 
-  void DetectFiles(G4String path);
+  void DetectFiles(std::string path);
 
   G4int GetFilesNumber();
 
-  std::vector<DataFile>& GetNextFiles(G4int files_num);
+  std::vector<DataFile> GetNextFiles(const G4int files_num);
 
   DataFile& GetNextFile();
 };

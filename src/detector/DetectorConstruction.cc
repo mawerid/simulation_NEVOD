@@ -16,7 +16,7 @@ DetectorConstruction::DetectorConstruction(Communicator* communicator): communic
       cwd_plane_number_ = 7;
       qsm_config_.resize(cwd_plane_number_);
       stride_config_.resize(cwd_plane_number_);
-      for (size_t i = 0; i < cwd_plane_number_; ++i) {
+      for (G4int i = 0; i < cwd_plane_number_; ++i) {
         if (i % 2 == 0) {
           qsm_config_[i] = 4;
           stride_config_[i] = 4;
@@ -154,10 +154,10 @@ void DetectorConstruction::ConstructSDandField() {
   sd_manager->AddNewDetector(airtube_sd);
   sd_manager->AddNewDetector(photocathode_sd);
 
-  for (size_t i = 0; i < cwd_plane_number_; ++i)
-    for (size_t j = 0; j < qsm_config_[i]; ++j)
-      for (size_t k = 0; k < stride_config_[i]; ++k)
-        for (size_t l = 0; l < PMT_PER_QSM; ++l) {
+  for (G4int i = 0; i < cwd_plane_number_; ++i)
+    for (G4int j = 0; j < qsm_config_[i]; ++j)
+      for (G4int k = 0; k < stride_config_[i]; ++k)
+        for (G4int l = 0; l < PMT_PER_QSM; ++l) {
           air_tube_log_[i][j][k][l]->SetSensitiveDetector(airtube_sd);
           photocathode_log_[i][j][k][l]->SetSensitiveDetector(photocathode_sd);
         }
@@ -185,8 +185,6 @@ void DetectorConstruction::ConstructSDandField() {
 }
 
 void DetectorConstruction::GenerateMaterials() {
-  G4NistManager* nist_manager = G4NistManager::Instance();
-
   //============================================================================
   // Elements
   //============================================================================
@@ -1004,9 +1002,9 @@ void DetectorConstruction::BuildCWD() {
   auto silicone_phys = init_vector4d<G4VPhysicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
   auto glass_phys = init_vector4d<G4VPhysicalVolume*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
 
-  for (size_t plane = 0; plane < cwd_plane_number_; plane++) {
-    for (size_t stripe = 0; stripe < stride_config_[plane]; stripe++) {
-      for (size_t module = 0; module < qsm_config_[plane]; module++) {
+  for (G4int plane = 0; plane < cwd_plane_number_; plane++) {
+    for (G4int stripe = 0; stripe < stride_config_[plane]; stripe++) {
+      for (G4int module = 0; module < qsm_config_[plane]; module++) {
         if ((plane == 0) || (plane == 2) || (plane == 4) || (plane == 6)) {
           // for fours
           pos_x = -3.0 + 2.0 * stripe * m;
@@ -1139,10 +1137,10 @@ void DetectorConstruction::BuildCWD() {
   // auto water_tube_surface = init_vector4d<G4LogicalBorderSurface*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
   // auto water_m_box_surface = init_vector4d<G4LogicalBorderSurface*>(cwd_plane_number_, 4, 4, PMT_PER_QSM);
 
-  for (size_t plane = 0; plane < cwd_plane_number_; plane++) {
-    for (size_t stripe = 0; stripe < stride_config_[plane]; stripe++) {
-      for (size_t module = 0; module < qsm_config_[plane]; module++) {
-        for (size_t i = 0; i < PMT_PER_QSM; i++) {
+  for (G4int plane = 0; plane < cwd_plane_number_; plane++) {
+    for (G4int stripe = 0; stripe < stride_config_[plane]; stripe++) {
+      for (G4int module = 0; module < qsm_config_[plane]; module++) {
+        for (G4int i = 0; i < PMT_PER_QSM; i++) {
           glass_pmt_surface[plane][stripe][module][i] = new G4LogicalBorderSurface(
               "GlassPMTSurface", glass_phys[plane][stripe][module][i], photocathode_phys_[plane][stripe][module][i], optical_plexiglass_tube_surface);
         }
@@ -1296,12 +1294,12 @@ void DetectorConstruction::BuildSCT() {
   G4int additional_counter_id;
   G4double counter_pos_z;
 
-  G4int counter_id;
+  G4int counter_id = 0;
   std::vector<CounterId> id_sct;
 
   G4ThreeVector null_vector(0.0 * m, 0.0 * m, 0.0 * m);
 
-  for (size_t side_count = 0; side_count < 2; ++side_count) {
+  for (G4int side_count = 0; side_count < 2; ++side_count) {
     // top or bottom
     if (side_count == 0) {
       additional_counter_id = 0;
@@ -1311,9 +1309,9 @@ void DetectorConstruction::BuildSCT() {
       counter_pos_z = counter_pos_z_down;
     }
 
-    for (size_t j = 0; j < sct_plane_number_.first; j++) {
+    for (G4int j = 0; j < sct_plane_number_.first; j++) {
       counter_id = counter_per_iter * j + additional_counter_id;
-      for (size_t i = 0; i < sct_counter_number_.first; i++) {
+      for (G4int i = 0; i < sct_counter_number_.first; i++) {
         counter_pos_x = (-4.5 + 1.5 + 2. * i) * m;
         counter_pos_y = (-13.0 + 5.625 + 2.5 * j) * m;
 
@@ -1361,9 +1359,9 @@ void DetectorConstruction::BuildSCT() {
         counter_id++;
       }
 
-      for (size_t j = 0; j < sct_plane_number_.second; j++) {
+      for (G4int j = 0; j < sct_plane_number_.second; j++) {
         counter_id = sct_counter_number_.first + counter_per_iter * j + additional_counter_id;
-        for (size_t i = 0; i < sct_counter_number_.second; i++) {
+        for (G4int i = 0; i < sct_counter_number_.second; i++) {
           counter_pos_x = (-4.5 + 0.5 + 2. * i) * m;
           counter_pos_y = (-13.0 + 6.875 + 2.5 * j) * m;
 

@@ -12,6 +12,8 @@ find_package(ROOT REQUIRED COMPONENTS RIO Net)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -Werror")
+add_compile_options(-Wno-unused-parameter)
+add_compile_options(-Wno-unused-variable)
 
 # ----------------------------------------------------------------------------
 # Find Geant4 package, activating all available UI and Vis drivers by default

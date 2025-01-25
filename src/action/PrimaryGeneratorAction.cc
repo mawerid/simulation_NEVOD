@@ -1,119 +1,115 @@
-#include "PrimaryGeneratorAction.hh"
-#include "G4Event.hh"
-#include "G4ParticleDefinition.hh"
-#include "G4ParticleGun.hh"
-#include "G4ParticleTable.hh"
+#include "action/PrimaryGeneratorAction.hh"
 
-#include "G4SystemOfUnits.hh"
+namespace nevod {
 
-#include "G4AutoLock.hh"
+PrimaryGeneratorAction::PrimaryGeneratorAction(Communicator* communicator, InputManager* input_manager)
+    : G4VUserPrimaryGeneratorAction(), communicator_(communicator), input_manager_(input_manager) {
+  current_epoch_ = 0;
+  epoch_num_ = communicator_->GetTotalEpochNum();
 
-namespace {
-G4Mutex mutex = G4MUTEX_INITIALIZER;
+  auto params = communicator_->GetSimulationParams();
+  input_path_ = params.input_path;
+
+  event_data_ = communicator_->GetEventData();
+
+  // Set number of primary particles generated in single gun
+  G4int particle_num = 1;
+  particle_gun_ = new G4ParticleGun(particle_num);
 }
 
-namespace NEVOD {
+PrimaryGeneratorAction::~PrimaryGeneratorAction() { delete particle_gun_; }
 
-extern G4long runNum;
-extern G4long eventNum;
+const G4ParticleGun* PrimaryGeneratorAction::GetParticleGun() const { return particle_gun_; }
 
-extern G4double theta, phi;
-
-FileReader *PrimaryGeneratorAction::fileReader = nullptr;
-
-PrimaryGeneratorAction::PrimaryGeneratorAction(G4String &fileName,
-                                               size_t shift) {
-  {
-    G4AutoLock lock(&mutex);
-    if (!fileReader)
-      fileReader = new FileReader(fileName, shift);
+void PrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
+  if (current_epoch_ >= epoch_num_) {
+    current_epoch_ = 0;
+    ReadEvents();
   }
 
-  G4int n_particle = 1;
-  particleGun = new G4ParticleGun(n_particle);
+  communicator_->SetCurrentEpoch(current_epoch_);
 
-  // default kinematic
-  G4ParticleTable *particleTable = G4ParticleTable::GetParticleTable();
-  G4ParticleDefinition *particle = particleTable->FindParticle("mu-");
-  particleGun->SetParticleDefinition(particle);
+  // launch the particles
+  G4ParticleTable* particle_table = G4ParticleTable::GetParticleTable();
 
-  particleGun->SetParticlePosition(
-      G4ThreeVector(-100.0 * cm, -1000.0 * cm, 100.0 * cm));
-}
+  for (auto& particle: event_data_->particles) {
+    G4ParticleDefinition* particle_definition = nullptr;
+    if (use_ui)
+      particle_definition = particle_table->FindParticle("geantino");
+    else
+      particle_definition = particle_table->FindParticle(particle.particle_id);
 
-PrimaryGeneratorAction::~PrimaryGeneratorAction() {
-  delete particleGun;
-  {
-    G4AutoLock lock(&mutex);
-    if (fileReader) {
-      delete fileReader;
-      fileReader = nullptr;
+    if (particle_definition == nullptr && communicator_->GetSimulationParams().verbose) {
+      std::cout << "Didn't find particle \"" << particle.particle_id << "\". Skipping it.\n";
+      continue;
     }
+
+    // -1 * z because angles are the angles of origin, not direction
+    event_data_->theta_rec = std::acos(-1 * particle.momentum.Z()) * 180. / M_PI;
+
+    event_data_->phi_rec = std::atan2(particle.momentum.Y(), particle.momentum.X()) * 180. / M_PI;
+
+    if (event_data_->phi_rec < 0.0) event_data_->phi_rec += 360.0;
+
+    G4double momentum_abs = std::hypot(particle.momentum.X(), particle.momentum.Y());
+
+    G4ThreeVector start_position =
+        G4ThreeVector((particle.coordinate.X() - shift_x), (particle.coordinate.Y() - shift_y), (particle.coordinate.Z() - shift_z));
+
+    G4ThreeVector start_momentum =
+        G4ThreeVector(particle.momentum.X() / momentum_abs, particle.momentum.Y() / momentum_abs, particle.momentum.Z() / momentum_abs);
+
+    particle_gun_->SetParticleDefinition(particle_definition);
+    particle_gun_->SetParticlePosition(start_position);
+    particle_gun_->SetParticleMomentumDirection(start_momentum);
+    particle_gun_->SetParticleEnergy(particle.energy);
+
+    particle_gun_->GeneratePrimaryVertex(event);
   }
+
+  G4cout << "Launched event " << event->GetEventID() << G4endl;
+
+  event_data_->start_time = std::chrono::steady_clock::now();
+
+  current_epoch_++;
 }
 
-void PrimaryGeneratorAction::GeneratePrimaries(G4Event *anEvent) {
-  G4ParticleTable *particleTable = G4ParticleTable::GetParticleTable();
-  G4ParticleDefinition *particle;
+void PrimaryGeneratorAction::ReadEvents() {
+  auto file = input_manager_->GetNextFile();
 
-  EventInit event;
-  if (fileReader) {
-    G4AutoLock lock(&mutex);
-    event = fileReader->getEvent();
+  auto input_file = new TFile((input_path_ + file.GetFileName()).c_str(), "READ");
+
+  auto header_tree = (TTree*)input_file->Get("HeaderTree");
+  auto particles_tree = (TTree*)input_file->Get("ParticlesTree");
+
+  event_data_->Clear();
+
+  if (!header_read_) {
+    header_tree->SetBranchAddress("EventID", &event_data_->event_id);
+    header_tree->SetBranchAddress("PrimaryParticleID", &event_data_->primary_particle_id);
+    header_tree->SetBranchAddress("ParticleAmount", &event_data_->particle_amount);
+    header_tree->SetBranchAddress("Theta", &event_data_->theta);
+    header_tree->SetBranchAddress("Phi", &event_data_->phi);
+
+    header_tree->GetEntry(0);
+    header_read_ = true;
   }
 
-  G4double shiftX, shiftY, shiftZ;
-  G4double directionX, directionY, directionZ;
-  G4double track_length;
+  for (Long64_t i = 0; i < particles_tree->GetEntries(); ++i) {
+    ParticleData particle;
 
-  shiftX = 4.5;
-  shiftY = 13.;
-  shiftZ = 4.5 - 0.3; // pravilno
+    particles_tree->SetBranchAddress("ParticleID", &particle.particle_id);
+    particles_tree->SetBranchAddress("ParticleNum", &particle.particle_num);
+    particles_tree->SetBranchAddress("Coordinate", &particle.coordinate);
+    particles_tree->SetBranchAddress("Momentum", &particle.momentum);
+    particles_tree->SetBranchAddress("Energy", &particle.energy);
 
-  runNum = event.runNum;
-  eventNum = event.eventNum;
+    particles_tree->GetEntry(i);
+    event_data_->particles.push_back(particle);
+  }
 
-  event.startX -= shiftX;
-  event.startY -= shiftY;
-  event.startZ -= shiftZ;
-  event.endX -= shiftX;
-  event.endY -= shiftY;
-  event.endZ -= shiftZ;
-
-  track_length =
-      std::hypot((event.endX - event.startX), (event.endY - event.startY),
-                 (event.endZ - event.startZ));
-
-  directionX = (event.endX - event.startX) / track_length;
-  directionY = (event.endY - event.startY) / track_length;
-  directionZ = (event.endZ - event.startZ) / track_length;
-
-  // -1 * z because angles are the angles of origin, not direction
-  theta = std::acos(-1 * directionZ) * 180. / M_PI;
-
-  phi = std::atan2(directionY, directionX) * 180. / M_PI;
-
-  if (phi < 0.)
-    phi += 360.;
-
-#ifdef G4VIS_USE
-  particle = particleTable->FindParticle("geantino");
-#else
-  if (event.particle_num == 5)
-    particle = particleTable->FindParticle("mu+");
-  if (event.particle_num == 6)
-    particle = particleTable->FindParticle("mu-");
-#endif
-
-  particleGun->SetParticleDefinition(particle);
-
-  particleGun->SetParticleMomentumDirection(
-      G4ThreeVector(directionX, directionY, directionZ));
-  particleGun->SetParticleEnergy(event.energy * GeV);
-  particleGun->SetParticlePosition(
-      G4ThreeVector(event.startX * m, event.startY * m, event.startZ * m));
-
-  particleGun->GeneratePrimaryVertex(anEvent);
+  input_file->Close();
+  delete input_file;
 }
 
-} // namespace NEVOD
+}  // namespace nevod

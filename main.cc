@@ -18,21 +18,14 @@
 
 #define EVENT_COUNT 1000
 
-using namespace nevod;
-
 int main(int argc, char** argv) {
   ROOT::EnableThreadSafety();
 
   if (argc < 2) throw std::invalid_argument("No configuration file provided");
 
-  auto* communicator = new Communicator(argv[1]);
+  auto* communicator = new nevod::Communicator(argv[1]);
   communicator->PrintStartMessage();
   auto params = communicator->GetSimulationParams();
-
-  auto* input_manager = new InputManager(communicator, params.initial_offset);
-  input_manager->DetectFiles(params.input_path);
-
-  if (input_manager->GetFilesNumber() == 0) throw std::invalid_argument("No files found in the input directory");
 
   // Seed the random number generator manually
   CLHEP::HepRandom::setTheEngine(new CLHEP::Ranlux64Engine);
@@ -53,7 +46,7 @@ int main(int argc, char** argv) {
   ui_manager->ApplyCommand("/process/had/verbose 0");
 
   // UserInitialization classes - mandatory
-  run_manager->SetUserInitialization(new DetectorConstruction(communicator));
+  run_manager->SetUserInitialization(new nevod::DetectorConstruction(communicator));
 
   auto* physics_list = new FTFP_BERT;  // optical
 
@@ -61,12 +54,15 @@ int main(int argc, char** argv) {
 
   run_manager->SetUserInitialization(physics_list);
 
-  run_manager->SetUserInitialization(new ActionInitialization(communicator, input_manager));
+  auto* input_manager = new nevod::InputManager(communicator, params.initial_offset);
+  input_manager->DetectFiles(params.input_path);
+
+  if (input_manager->GetFilesNumber() == 0) throw std::invalid_argument("No files found in the input directory");
+
+  run_manager->SetUserInitialization(new nevod::ActionInitialization(communicator, input_manager));
 
   G4UIExecutive* ui_executive = nullptr;
   G4VisManager* vis_manager = nullptr;
-
-  G4int total_events_count = params.epoch_num * input_manager->GetFilesNumber();
 
   if (params.use_ui) {
     vis_manager = new G4VisExecutive;
@@ -81,6 +77,8 @@ int main(int argc, char** argv) {
     run_manager->SetEventModulo(params.epoch_num);
 #endif
     run_manager->Initialize();
+
+    G4int total_events_count = params.epoch_num * input_manager->GetFilesNumber();
 
     communicator->SetTotalEventCount(total_events_count);
     G4cout << "Events to simulate: " << total_events_count << G4endl;

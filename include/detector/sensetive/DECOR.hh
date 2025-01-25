@@ -4,7 +4,6 @@
 #include "G4ParticleTypes.hh"
 #include "G4VSensitiveDetector.hh"
 #include "control/Communicator.hh"
-#include "control/EventData.hh"
 
 class G4Step;
 namespace nevod {

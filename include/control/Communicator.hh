@@ -89,15 +89,18 @@ class Communicator {
   void SetCountSCT(const G4int count_sct);
   void SetQSMId(const std::vector<PMTId>& id_qsm);
   void SetCounterId(const std::vector<CounterId>& id_sct);
+  void SetCurrentEpoch(const G4int current_epoch);
 
   SimulationParams& GetSimulationParams();
   EventData* GetEventData();
   G4int GetCountPMT();
   G4int GetCountSCT();
   G4int GetMaxStepCount();
+  G4int GetTotalEpochNum();
+  G4int GetCurrentEpoch();
   PMTId GetQSMId(const G4int copy_number);
   CounterId GetCounterId(const G4int copy_number);
-  std::chrono::steady_clock::time_point GetEventSimulationStartTime();
+  std::chrono::steady_clock::time_point GetEventStartTime();
 
  private:
   // progress bar
@@ -107,15 +110,18 @@ class Communicator {
   // TODO add minimum and maximum energy for PMT
 
   // simulation parameters
-  SimulationParams simulation_params_;
-  G4int count_pmt_;
-  G4int count_sct_;
-  std::vector<PMTId> id_qsm_;
-  std::vector<CounterId> id_sct_;
+  SimulationParams simulation_params_{};
+  G4int count_pmt_ = 0;
+  G4int count_sct_ = 0;
+  std::vector<PMTId> id_qsm_{};
+  std::vector<CounterId> id_sct_{};
 
   // massive of event data (for each thread)
-  std::vector<EventData*> event_data_;
+  std::vector<EventData*> event_data_{nullptr};
+  std::vector<G4int> current_epoch_{0};
   G4Mutex mutex_ = G4MUTEX_INITIALIZER;
+
+  void ResetEventData();
 };
 }  // namespace nevod
 
