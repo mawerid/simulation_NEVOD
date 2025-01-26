@@ -1,7 +1,5 @@
-*.vscode
-*.idea
-new_version/*
-old_version/*
-data
+.vscode
+.idea
+data/
 cmake-build-debug
 build
