@@ -11,7 +11,7 @@ output_dir_path: "output"
 verbose: true
 use_old_nevod_configs: true
 use_old_sct_configs: true
-use_ui: false
+use_ui: true
 
 seed: 47212
 

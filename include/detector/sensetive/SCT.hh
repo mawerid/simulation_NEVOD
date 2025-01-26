@@ -15,7 +15,7 @@ class SCTSensetiveDetector : public G4VSensitiveDetector {
 
  public:
   SCTSensetiveDetector(G4String name, Communicator* communicator);
-  ~SCTSensetiveDetector();
+  ~SCTSensetiveDetector() = default;
 
   virtual G4bool ProcessHits(G4Step* step, G4TouchableHistory* history);
   virtual void EndOfEvent(G4HCofThisEvent*);

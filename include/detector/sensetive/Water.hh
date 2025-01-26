@@ -13,7 +13,7 @@ class WaterSensetiveDetector : public G4VSensitiveDetector {
 
  public:
   WaterSensetiveDetector(G4String name, Communicator* communicator);
-  ~WaterSensetiveDetector();
+  ~WaterSensetiveDetector() = default;
 
   virtual G4bool ProcessHits(G4Step* step, G4TouchableHistory* history);
   virtual void EndOfEvent(G4HCofThisEvent*);

@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include "FTFP_BERT.hh"
 #include "G4OpticalPhysics.hh"
 #include "G4RunManagerFactory.hh"
@@ -15,6 +13,7 @@
 #include "control/Communicator.hh"
 #include "control/InputManager.hh"
 #include "detector/DetectorConstruction.hh"
+#include "globals.hh"
 
 #define EVENT_COUNT 1000
 
@@ -23,7 +22,7 @@ int main(int argc, char** argv) {
 
   if (argc < 2) throw std::invalid_argument("No configuration file provided");
 
-  auto* communicator = new nevod::Communicator(argv[1]);
+  nevod::Communicator* communicator = new nevod::Communicator(argv[1]);
   communicator->PrintStartMessage();
   auto params = communicator->GetSimulationParams();
 
@@ -33,14 +32,14 @@ int main(int argc, char** argv) {
 
   // Run manager
 #ifdef G4MULTITHREADED
-  auto* run_manager = new G4MTRunManager;
+  G4MTRunManager* run_manager = new G4MTRunManager;
 #else
-  auto* run_manager = new G4RunManager;
+  G4RunManager* run_manager = new G4RunManager;
 #endif
 
   run_manager->SetVerboseLevel(params.verbose ? 1 : 0);
 
-  auto* ui_manager = G4UImanager::GetUIpointer();
+  G4UImanager* ui_manager = G4UImanager::GetUIpointer();
   ui_manager->ApplyCommand("/control/cout/ignoreThreadsExcept 1000000");
   ui_manager->ApplyCommand("/process/em/verbose 0");
   ui_manager->ApplyCommand("/process/had/verbose 0");
@@ -54,7 +53,7 @@ int main(int argc, char** argv) {
 
   run_manager->SetUserInitialization(physics_list);
 
-  auto* input_manager = new nevod::InputManager(communicator, params.initial_offset);
+  nevod::InputManager* input_manager = new nevod::InputManager(communicator, params.initial_offset);
   input_manager->DetectFiles(params.input_path);
 
   if (input_manager->GetFilesNumber() == 0) throw std::invalid_argument("No files found in the input directory");

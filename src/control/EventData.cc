@@ -1,9 +1,53 @@
 #include "control/EventData.hh"
 
-// Implement ROOT ClassDef macros
-ClassImp(nevod::ParticleData);
-
 namespace nevod {
+
+void Particles::push_back(const ParticleData particle) {
+  particle_id.push_back(particle.particle_id);
+  particle_num.push_back(particle.particle_num);
+  coordinate.push_back(particle.coordinate);
+  momentum.push_back(particle.momentum);
+  energy.push_back(particle.energy);
+}
+
+void Particles::push_back(
+    const ULong_t particle_id, const ULong_t particle_num, const TVector3 coordinate, const TVector3 momentum, const Double_t energy) {
+  ParticleData particle;
+  particle.particle_id = particle_id;
+  particle.particle_num = particle_num;
+  particle.coordinate = coordinate;
+  particle.momentum = momentum;
+  particle.energy = energy;
+  push_back(particle);
+}
+
+void Particles::resize(const size_t size) {
+  particle_id.resize(size);
+  particle_num.resize(size);
+  coordinate.resize(size);
+  momentum.resize(size);
+  energy.resize(size);
+}
+
+void Particles::clear() {
+  particle_id.clear();
+  particle_num.clear();
+  coordinate.clear();
+  momentum.clear();
+  energy.clear();
+}
+
+ParticleData Particles::operator[](const size_t index) const {
+  ParticleData particle;
+  particle.particle_id = particle_id[index];
+  particle.particle_num = particle_num[index];
+  particle.coordinate = coordinate[index];
+  particle.momentum = momentum[index];
+  particle.energy = energy[index];
+  return particle;
+}
+
+size_t Particles::size() const { return particle_id.size(); }
 
 EventData::EventData(): EventData(0, 0, 0, 0, 0) {}
 EventData::EventData(ULong_t event_id, ULong_t primary_particle_id, ULong_t particle_amount, Double_t theta, Double_t phi)
@@ -49,13 +93,11 @@ void EventData::ConnectEventTree(TTree* tree) {
   tree->Branch("SCT", &edep_count_sct);
   tree->Branch("CherenkovWD", &amplitude_qsm);
 
-  for (size_t i = 0; i < particles.size(); i++) {
-    tree->Branch("ParticleID", &particles[i].particle_id, "ParticleID/L");
-    tree->Branch("ParticleNum", &particles[i].particle_num, "ParticleNum/L");
-    tree->Branch("Coordinate", &particles[i].coordinate);
-    tree->Branch("Momentum", &particles[i].momentum);
-    tree->Branch("Energy", &particles[i].energy, "Energy/D");
-  }
+  tree->Branch("ParticleID", &particles.particle_id);
+  tree->Branch("ParticleNum", &particles.particle_num);
+  tree->Branch("Coordinate", &particles.coordinate);
+  tree->Branch("Momentum", &particles.momentum);
+  tree->Branch("Energy", &particles.energy);
 }
 
 void EventData::Print() const { operator<<(G4cout); }
@@ -86,11 +128,11 @@ void EventData::Clear(G4bool clear_header) {
   start_time = std::chrono::steady_clock::now();
   duration = 0;
   muon_nevod = std::make_pair(TrackData(), TrackData());
-  muon_decor = vector3d<Double_t>();
-  muon_decor_w = vector3d<Double_t>();
-  edep_count_sct = vector3d<Double_t>();
+  muon_decor = init_vector3d<Double_t>(0, 0, 0, 0);
+  muon_decor_w = init_vector3d<Double_t>(0, 0, 0, 0);
+  edep_count_sct = init_vector3d<Double_t>(0, 0, 0, 0);
   photoelectron_num.clear();
-  amplitude_qsm = vector4d<Double_t>();
+  amplitude_qsm = init_vector4d<Double_t>(0, 0, 0, 0, 0);
 }
 
 }  // namespace nevod

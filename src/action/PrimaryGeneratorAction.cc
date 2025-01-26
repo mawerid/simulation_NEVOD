@@ -32,7 +32,9 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
   // launch the particles
   G4ParticleTable* particle_table = G4ParticleTable::GetParticleTable();
 
-  for (auto& particle: event_data_->particles) {
+  for (size_t i = 0; i < event_data_->particles.size(); i++) {
+    ParticleData particle = event_data_->particles[i];
+
     G4ParticleDefinition* particle_definition = nullptr;
     if (use_ui)
       particle_definition = particle_table->FindParticle("geantino");
@@ -40,7 +42,7 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
       particle_definition = particle_table->FindParticle(particle.particle_id);
 
     if (particle_definition == nullptr && communicator_->GetSimulationParams().verbose) {
-      std::cout << "Didn't find particle \"" << particle.particle_id << "\". Skipping it.\n";
+      G4cout << "Didn't find particle \"" << particle.particle_id << "\". Skipping it." << G4endl;
       continue;
     }
 

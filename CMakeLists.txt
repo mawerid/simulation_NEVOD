@@ -13,6 +13,8 @@ find_package(ROOT REQUIRED COMPONENTS RIO Net)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -Werror")
 add_compile_options(-Wno-unused-parameter)
+
+# TODO remove this
 add_compile_options(-Wno-unused-variable)
 
 # ----------------------------------------------------------------------------

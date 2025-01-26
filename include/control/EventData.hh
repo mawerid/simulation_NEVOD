@@ -44,15 +44,31 @@ struct TrackData {
   G4double energy{};
 };
 
-struct ParticleData : public TObject {
+struct ParticleData {
   ULong_t particle_id{};
   ULong_t particle_num{};
   TVector3 coordinate{};  // in metres
   TVector3 momentum{};
   Double_t energy{};  // in GeV
+};
 
-  // ROOT dictionary support
-  ClassDef(nevod::ParticleData, 1);
+struct Particles {
+  std::vector<ULong_t> particle_id{};
+  std::vector<ULong_t> particle_num{};
+  std::vector<TVector3> coordinate{};  // in metres
+  std::vector<TVector3> momentum{};
+  std::vector<Double_t> energy{};  // in GeV
+
+  Particles() = default;
+  ~Particles() = default;
+
+  void push_back(const ParticleData particle);
+  void push_back(const ULong_t particle_id, const ULong_t particle_num, const TVector3 coordinate, const TVector3 momentum, const Double_t energy);
+
+  void resize(const size_t size);
+  void clear();
+  ParticleData operator[](const size_t index) const;
+  size_t size() const;
 };
 
 struct EventData {
@@ -62,7 +78,7 @@ struct EventData {
   Double_t theta{}, phi{};  // in degrees
 
   // Initial data
-  std::vector<ParticleData> particles;
+  Particles particles;
 
   // Data after simulation
   Double_t theta_rec{}, phi_rec{};  // in degrees
