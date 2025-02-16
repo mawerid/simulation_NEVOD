@@ -47,24 +47,26 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
     }
 
     // -1 * z because angles are the angles of origin, not direction
-    event_data_->theta_rec = std::acos(-1 * particle.momentum.Z()) * 180. / M_PI;
+    event_data_->theta_rec = std::acos(-1 * particle.momentum.Z()) * 180.0 / M_PI;
 
-    event_data_->phi_rec = std::atan2(particle.momentum.Y(), particle.momentum.X()) * 180. / M_PI;
+    event_data_->phi_rec = std::atan2(particle.momentum.Y(), particle.momentum.X()) * 180.0 / M_PI;
 
     if (event_data_->phi_rec < 0.0) event_data_->phi_rec += 360.0;
 
-    G4double momentum_abs = std::hypot(particle.momentum.X(), particle.momentum.Y());
+    G4double momentum_abs = std::hypot(particle.momentum.X(), particle.momentum.Y(), particle.momentum.Z());
 
     G4ThreeVector start_position =
-        G4ThreeVector((particle.coordinate.X() - shift_x), (particle.coordinate.Y() - shift_y), (particle.coordinate.Z() - shift_z));
+        G4ThreeVector((particle.coordinate.X() * m - shift_x), (particle.coordinate.Y() * m - shift_y), (particle.coordinate.Z() * m - shift_z));
 
+    // -1 * z because angles are the angles of origin, not direction
+    // TODO: check if it's correct
     G4ThreeVector start_momentum =
-        G4ThreeVector(particle.momentum.X() / momentum_abs, particle.momentum.Y() / momentum_abs, particle.momentum.Z() / momentum_abs);
+        G4ThreeVector(particle.momentum.X() / momentum_abs, particle.momentum.Y() / momentum_abs, (-1.0) * particle.momentum.Z() / momentum_abs);
 
     particle_gun_->SetParticleDefinition(particle_definition);
     particle_gun_->SetParticlePosition(start_position);
     particle_gun_->SetParticleMomentumDirection(start_momentum);
-    particle_gun_->SetParticleEnergy(particle.energy);
+    particle_gun_->SetParticleEnergy(particle.energy * GeV);
 
     particle_gun_->GeneratePrimaryVertex(event);
   }
